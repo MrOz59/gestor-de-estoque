@@ -2,7 +2,7 @@
 
 ## Descrição
 
-Este repositório contém o código-fonte para um sistema de controle de estoque desenvolvido para a loja online "Seu Sexy Shop," que vende produtos eróticos. O aplicativo foi projetado para ajudar a gerenciar o estoque de produtos, controlar entradas e saídas, e gerar relatórios para melhorar a eficiência e organização do negócio.
+Este repositório contém o código-fonte para um sistema de controle de estoque desenvolvido para a pequenas lojas que precisem de um controle de validade e lotes simples. O aplicativo foi projetado para ajudar a gerenciar o estoque de produtos, controlar entradas e saídas, e gerar relatórios para melhorar a eficiência e organização do negócio.
 
 ## Funcionalidades
 
