@@ -1,4 +1,4 @@
-# Controle de Estoque para Seu Sexy Shop
+# App para Controle de Estoque
 
 ## Descrição
 
