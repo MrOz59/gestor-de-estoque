@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from datetime import datetime
 from tkinter import messagebox
+from logs import configurar_logs
 from db import (
 gerar_relatorio_proximos_da_validade,gerar_relatorio_rotatividade_produtos,
 gerar_relatorio_movimentacoes,adicionar_produto_base,buscar_produto_db,
@@ -10,6 +11,8 @@ editar_produto_base,buscar_produtos_por_criterio,adicionar_entrada,adicionar_sai
 
 class Aplicacao(tk.Tk):
     def __init__(self):
+        logger = configurar_logs()
+        logger.info("Interface grafica iniciada.")
         super().__init__()
         self.title("Gerenciador de Estoque")
         self.geometry("600x400")

@@ -12,7 +12,7 @@ def main():
         logger.info("Tentando iniciar a interface gráfica.")
         app = Aplicacao()
         app.mainloop()
-        logger.info("Interface grafica iniciada.")
+        logger.info("App encerrando.")
     except Exception as e:
         logger.exception("Erro ao iniciar a aplicação: ")
         raise e
