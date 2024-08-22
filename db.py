@@ -9,7 +9,7 @@ from logs import configurar_logs
 logger = configurar_logs()
 
 class ConexaoBD:
-    def __init__(self, db_path="estoque.db"):
+    def __init__(self, db_path="Kalymos_estoque.db"):
         self.db_path = db_path
         self.conn = None
         self.cursor = None
@@ -391,7 +391,7 @@ def comparar_datas(data1, data2):
 
 def gerar_relatorio_proximos_da_validade():
     logger.info(f"Gerando relatorio de validade")
-    nome_arquivo = "relatorio_proximos_da_validade.pdf"
+    nome_arquivo = "Kalymos_relatorio_proximos_da_validade.pdf"
     doc = SimpleDocTemplate(nome_arquivo, pagesize=letter)
     content = []
 
@@ -504,7 +504,7 @@ def gerar_relatorio_estoque():
             pdf.cell(col_widths[2], 10, str(quantidade_total), 1)
             pdf.ln()
 
-    pdf_file_name = f'relatorio_estoque_{datetime.now().strftime("%d%m%Y_%H%M%S")}.pdf'
+    pdf_file_name = f'Kalymos_relatorio_estoque_{datetime.now().strftime("%d%m%Y_%H%M%S")}.pdf'
     pdf.output(pdf_file_name)
     print(f"Relatório gerado: {pdf_file_name}")
 
@@ -628,7 +628,7 @@ def gerar_relatorio_rotatividade_produtos():
                 pdf.cell(col_widths[i], 10, data, 1, 0, "C", fill=True)
             pdf.ln()
 
-    pdf.output("relatorio_rotatividade_produtos.pdf")
+    pdf.output("Kalymos_relatorio_rotatividade_produtos.pdf")
 
 def gerar_relatorio_movimentacoes():
     logger.info(f"Gerando relatorio de movimentações de estoque")
@@ -677,7 +677,7 @@ def gerar_relatorio_movimentacoes():
             pdf.cell(30, 10, row[4], 1, 0, "C", 1)
             pdf.cell(30, 10, str(row[5]), 1, 1, "C", 1)
 
-    pdf.output("relatorio_movimentacoes.pdf")
+    pdf.output("Kalymos_relatorio_movimentacoes.pdf")
 
 def obter_cor_fundo(validade_str, hoje_str, data_limite_str):
     validade = datetime.strptime(validade_str, "%d/%m/%Y")
@@ -757,6 +757,6 @@ def gerar_relatorio_pl():
     pdf.cell(40, 10, f'R$ {diferenca:.2f}', border=1, ln=1, fill=True)
 
     # Salvar o PDF
-    pdf.output('relatorio_pl.pdf')
+    pdf.output('kalymos_relatorio_pl.pdf')
     print("Relatório P&L gerado com sucesso!")
 

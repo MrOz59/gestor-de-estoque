@@ -15,7 +15,7 @@ class Aplicacao(tk.Tk):
         logger = configurar_logs()
         logger.info("Interface grafica iniciada.")
         super().__init__()
-        self.title("Gerenciador de Estoque")
+        self.title("kalymos")
         self.geometry("600x400")
         self.state('zoomed')
 
