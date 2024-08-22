@@ -8,9 +8,7 @@ def main():
     logger.info("Iniciando a aplicação...")
 
     try:
-        logger.info("Criando tabelas caso não existam")
-        criar_tabelas()  # Configuração inicial do banco de dados
-        # Cria e inicia a aplicação
+        criar_tabelas()
         logger.info("Tentando iniciar a interface gráfica.")
         app = Aplicacao()
         app.mainloop()
