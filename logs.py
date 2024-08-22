@@ -4,18 +4,18 @@ from logging.handlers import RotatingFileHandler
 
 def configurar_logs():
     log_dir = "logs"
-    os.makedirs(log_dir, exist_ok=True)  # Cria o diretório de logs se não existir
+    os.makedirs(log_dir, exist_ok=True)
 
     log_file = os.path.join(log_dir, "app.log")
 
     # Configuração do logger principal
     logger = logging.getLogger()
-    logger.setLevel(logging.DEBUG)  # Configurar o nível de log global
+    logger.setLevel(logging.DEBUG)
 
     # Formato do log
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
-    # Handler para o console (opcional)
+    # Handler para o console
     console_handler = logging.StreamHandler()
     console_handler.setLevel(logging.INFO)
     console_handler.setFormatter(formatter)
@@ -28,5 +28,3 @@ def configurar_logs():
     logger.addHandler(file_handler)
 
     return logger
-
-# Chame esta função no início do seu aplicativo para configurar o logging

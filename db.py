@@ -8,7 +8,6 @@ from logs import configurar_logs
 
 logger = configurar_logs()
 
-
 class ConexaoBD:
     def __init__(self, db_path="estoque.db"):
         self.db_path = db_path
@@ -31,13 +30,10 @@ class ConexaoBD:
             logger.info("Conexão com o banco de dados encerrada.")
 
 def conectar_bd():
-    """Estabelece uma conexão com o banco de dados e retorna o objeto de conexão e cursor como um gerenciador de contexto."""
     logger.info("Conectando ao banco de dados.")
     return ConexaoBD()
 
-
 def criar_tabelas():
-    """Cria as tabelas no banco de dados se não existirem."""
     logger.info("Criando tabelas no banco de dados.")
     with conectar_bd() as (conn, cursor):
         cursor.execute(
@@ -47,6 +43,7 @@ def criar_tabelas():
             nome TEXT UNIQUE NOT NULL,
             sku TEXT UNIQUE NOT NULL,
             preco REAL NOT NULL,
+            fator FLOAT NOT NULL,
             fornecedor TEXT NOT NULL
         )
         """
@@ -74,6 +71,7 @@ def criar_tabelas():
             sku TEXT NOT NULL,
             lote TEXT,
             quantidade INTEGER NOT NULL,
+            valor FLOAT NOT NULL,
             motivo TEXT NOT NULL,
             FOREIGN KEY (sku) REFERENCES produtos(sku),
             FOREIGN KEY (lote) REFERENCES lotes(lote)
@@ -83,12 +81,10 @@ def criar_tabelas():
         conn.commit()
         logger.info("Tabelas criadas com sucesso.")
 
-
 def buscar_produtos_e_lotes():
-    """Busca todos os produtos e lotes do banco de dados e retorna uma lista de resultados."""
     logger.info("Buscando todos os produtos e lotes do banco de dados.")
     query = """
-    SELECT p.nome, p.sku, p.fornecedor, p.preco, l.lote, l.validade, l.quantidade
+    SELECT p.nome, p.sku, p.fornecedor, p.preco, p.fator, l.lote, l.validade, l.quantidade
     FROM produtos p
     LEFT JOIN lotes l ON p.sku = l.sku
     ORDER BY p.nome, l.lote
@@ -96,12 +92,20 @@ def buscar_produtos_e_lotes():
     with conectar_bd() as (conn, cursor):
         cursor.execute(query)
         resultados = cursor.fetchall()
-        logger.info(f"Produtos e lotes encontrados: {len(resultados)} registros.")
-        return resultados
 
+    # Adiciona o cálculo do preço de venda a cada produto/lote
+    produtos_com_preco_venda = []
+    for resultado in resultados:
+        nome, sku, fornecedor, preco, fator, lote, validade, quantidade = resultado
+        preco_venda = preco * fator  # Calcula o preço de venda
+        produtos_com_preco_venda.append(
+            (nome, sku, fornecedor, preco, preco_venda, lote, validade, quantidade)
+        )
+
+    logger.info(f"Produtos e lotes encontrados: {len(produtos_com_preco_venda)} registros.")
+    return produtos_com_preco_venda
 
 def buscar_produtos_por_criterio(valor):
-    """Busca produtos no banco de dados com base em um critério e valor fornecidos."""
     logger.info(f"Buscando produtos por critério: {valor}.")
     query = """
     SELECT p.nome, p.sku, p.preco, p.fornecedor, l.lote, l.validade, l.quantidade
@@ -115,12 +119,9 @@ def buscar_produtos_por_criterio(valor):
     logger.info(f"Produtos encontrados por critério: {len(resultados)} registros.")
     return resultados
 
-
-def editar_produto_base(nome, sku, preco, fornecedor):
-    """Atualiza os detalhes de um produto existente no banco de dados."""
+def editar_produto_base(nome, sku, preco, fornecedor,fator):
     logger.info(f"Editando produto: {sku}.")
     try:
-        # Conectar ao banco de dados
         with conectar_bd() as (conn, cursor):
             # Verificar se o SKU existe
             cursor.execute("SELECT SKU FROM produtos WHERE SKU = ?", (sku,))
@@ -143,10 +144,10 @@ def editar_produto_base(nome, sku, preco, fornecedor):
             cursor.execute(
                 """
                 UPDATE produtos
-                SET nome = ?, preco = ?, fornecedor = ?
+                SET nome = ?, preco = ?, fornecedor = ?, fator = ?
                 WHERE SKU = ?
             """,
-                (nome, preco, fornecedor, sku),
+                (nome, preco, fornecedor,fator, sku),
             )
 
             # Confirmar as mudanças
@@ -158,16 +159,14 @@ def editar_produto_base(nome, sku, preco, fornecedor):
         logger.error(f"Erro ao atualizar produto {sku}: {e}")
         return {"status": "erro", "mensagem": f"Ocorreu um erro: {e}"}
 
-
 def buscar_produto_db(sku):
-    """Busca um produto no banco de dados pelo SKU e retorna um dicionário com os detalhes do produto."""
     # Conectar ao banco de dados
     logger.info(f"Buscando produto pelo SKU: {sku}.")
     with conectar_bd() as (conn, cursor):
         # Executar a consulta para buscar o produto pelo SKU
         cursor.execute(
             """
-            SELECT nome, preco, fornecedor
+            SELECT nome, preco, fornecedor,fator
             FROM produtos
             WHERE SKU = ?
         """,
@@ -179,17 +178,15 @@ def buscar_produto_db(sku):
 
         # Se o resultado existir, retornar como um dicionário
         if resultado:
-            nome, preco, fornecedor = resultado
+            nome, preco, fornecedor, fator = resultado
             logger.info(f"Produto encontrado: {sku}.")
-            return {"nome": nome, "preco": preco, "fornecedor": fornecedor}
+            return {"nome": nome, "preco": preco, "fornecedor": fornecedor,"fator": fator}
         else:
             logger.warning(f"Produto não encontrado: {sku}.")
             # Se o produto não for encontrado, retornar None
             return None
 
-
-def adicionar_produto_base(nome, sku, preco, fornecedor):
-    """Adiciona um novo produto ao banco de dados."""
+def adicionar_produto_base(nome, sku, preco, fornecedor,fator):
     logger.info(f"Adicionando produto: {sku}.")
     if not nome.strip():
         logger.error("O campo 'Nome' não pode estar em branco.")
@@ -205,6 +202,12 @@ def adicionar_produto_base(nome, sku, preco, fornecedor):
         return {
             "status": "erro",
             "mensagem": "O campo 'Preço' não pode estar em branco.",
+        }
+    if not fator.strip():
+        logger.error("O campo 'Fator' não pode estar em branco.")
+        return {
+            "status": "erro",
+            "mensagem": "O campo 'Fator' não pode estar em branco.",
         }
     if not fornecedor.strip():
         logger.error("O campo 'Fornecedor' não pode estar em branco.")
@@ -231,8 +234,8 @@ def adicionar_produto_base(nome, sku, preco, fornecedor):
                 }
 
             cursor.execute(
-                "INSERT INTO produtos (nome, sku, preco, fornecedor) VALUES (?, ?, ?, ?)",
-                (nome, sku, preco, fornecedor),
+                "INSERT INTO produtos (nome, sku, preco, fornecedor,fator) VALUES (?, ?, ?, ?,?)",
+                (nome, sku, preco, fornecedor,fator),
             )
             conn.commit()
             logger.info(f"Produto {sku} adicionado com sucesso.")
@@ -242,9 +245,7 @@ def adicionar_produto_base(nome, sku, preco, fornecedor):
             logger.error(f"Erro ao adicionar produto {sku}: {e}")
             return {"status": "erro", "mensagem": f"Ocorreu um erro: {e}"}
 
-
 def adicionar_entrada(sku, lote, validade, quantidade, motivo, substituir):
-    """Adiciona uma entrada no banco de dados, somando quantidades se o lote já existir."""
     logger.info(f"Adicionando entrada: SKU {sku}, Lote {lote}.")
     with conectar_bd() as (conn, cursor):
         # Verificar se o SKU existe
@@ -252,6 +253,14 @@ def adicionar_entrada(sku, lote, validade, quantidade, motivo, substituir):
         if cursor.fetchone()[0] == 0:
             logger.error(f"SKU não existe: {sku}.")
             return {"status": "erro", "mensagem": "SKU não existe."}
+
+        # Buscar o preço do produto pelo SKU
+        cursor.execute("SELECT preco FROM produtos WHERE sku = ?", (sku,))
+        preco = cursor.fetchone()
+        if preco is None:
+            logger.error(f"Preço não encontrado para SKU {sku}.")
+            return {"status": "erro", "mensagem": "Preço não encontrado para o SKU."}
+        valor = preco[0]
 
         # Verificar se o lote já existe
         cursor.execute(
@@ -295,14 +304,12 @@ def adicionar_entrada(sku, lote, validade, quantidade, motivo, substituir):
             )
 
         # Registrar movimentação de entrada utilizando a mesma conexão e cursor
-        registrar_movimentacao(cursor, conn, "Entrada", sku, lote, quantidade, motivo)
+        registrar_movimentacao(cursor, conn, "Entrada", sku, lote, quantidade, motivo, valor)
         logger.info(f"Entrada atualizada: SKU {sku}, Lote {lote}.")
         conn.commit()
         return {"status": "sucesso", "mensagem": "Entrada adicionada com sucesso!"}
 
-
 def adicionar_saida(sku, lote, quantidade, motivo):
-    """Adiciona uma saída no banco de dados, verificando a quantidade disponível."""
     logger.info(f"Adicionando saída: SKU {sku}, Lote {lote}.")
     with conectar_bd() as (conn, cursor):
         # Verificar se o SKU existe
@@ -344,28 +351,25 @@ def adicionar_saida(sku, lote, quantidade, motivo):
         """,
             (nova_quantidade, sku, lote),
         )
-
-        # Registrar movimentação de saída utilizando a mesma conexão e cursor
-        registrar_movimentacao(cursor, conn, "Saída", sku, lote, quantidade, motivo)
+        cursor.execute("SELECT preco FROM produtos WHERE sku = ?", (sku,))
+        preco = cursor.fetchone()[0]
+        registrar_movimentacao(cursor, conn, "Saída", sku, lote, quantidade, motivo,preco)
         logger.info(f"Saída registrada: SKU {sku}, Lote {lote}.")
         conn.commit()
         return {"status": "sucesso", "mensagem": "Saída adicionada com sucesso!"}
 
-
-def registrar_movimentacao(cursor, conn, tipo, sku, lote, quantidade, motivo):
-    """Registra uma movimentação no banco de dados."""
+def registrar_movimentacao(cursor, conn, tipo, sku, lote, quantidade, motivo,valor):
     logger.info(
         f"Registrandomovimentção de estoque: Tipo:{tipo}, SKU:{sku}, Lote:{lote}, Quantidade:{quantidade}, Motivo:{motivo}"
     )
-    data = datetime.now().strftime("%d/%m/%Y")  # Data no formato dd/mm/aaaa
+    data = datetime.now().strftime("%d/%m/%Y")
     cursor.execute(
         """
-    INSERT INTO movimentacoes (data, tipo, sku, lote, quantidade, motivo)
-    VALUES (?, ?, ?, ?, ?, ?)
+    INSERT INTO movimentacoes (data, tipo, sku, lote, quantidade, motivo, valor)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
     """,
-        (data, tipo, sku, lote, quantidade, motivo),
+        (data, tipo, sku, lote, quantidade, motivo, valor),
     )
-
 
 def remover_lote(sku, lote):
     logger.info(f"Removendo lote sem estoque, Lote:{lote}, SKU:{sku}.")
@@ -375,9 +379,7 @@ def remover_lote(sku, lote):
         conn.commit()
         registrar_movimentacao("Remoção", sku, lote, 0)
 
-
 def comparar_datas(data1, data2):
-    """Compara duas datas no formato dd/mm/aaaa. Retorna 1 se data1 > data2, -1 se data1 < data2, e 0 se iguais."""
     d1 = datetime.strptime(data1, "%d/%m/%Y")
     d2 = datetime.strptime(data2, "%d/%m/%Y")
     if d1 > d2:
@@ -386,7 +388,6 @@ def comparar_datas(data1, data2):
         return -1
     else:
         return 0
-
 
 def gerar_relatorio_proximos_da_validade():
     logger.info(f"Gerando relatorio de validade")
@@ -459,16 +460,13 @@ def gerar_relatorio_proximos_da_validade():
 
     print(f"Relatório gerado: {nome_arquivo}")
 
-
 def formatar(data):
-    """Formata a data para o formato dd/mm/aaaa"""
     if data:
         try:
             return datetime.strptime(data, "%Y-%m-%d").strftime("%d/%m/%Y")
         except ValueError:
             return data
     return "Nunca"
-
 
 def gerar_relatorio_estoque():
     logger.info(f"Gerando relatorio de estoque")
@@ -510,7 +508,6 @@ def gerar_relatorio_estoque():
     pdf.output(pdf_file_name)
     print(f"Relatório gerado: {pdf_file_name}")
 
-
 def gerar_relatorio_rotatividade_produtos():
     logger.info(f"Gerando relatorio de rotatividade")
     pdf = FPDF(orientation="L", unit="mm", format="A4")
@@ -541,7 +538,6 @@ def gerar_relatorio_rotatividade_produtos():
     limite_entrada = (data_atual - timedelta(days=30)).strftime("%Y-%m-%d")
 
     with conectar_bd() as (conn, cursor):
-        # Corrigindo a consulta para agregar as saídas dos últimos 90 dias
         cursor.execute(
             """
         SELECT p.nome, p.sku, p.preco, p.fornecedor, 
@@ -563,7 +559,6 @@ def gerar_relatorio_rotatividade_produtos():
             nome, sku, preco, fornecedor, total_saidas = row
             total_saidas = total_saidas if total_saidas else 0
 
-            # Ajuste para pegar a data mais próxima da entrada e saída
             with conectar_bd() as (conn, cursor):
                 cursor.execute(
                     """
@@ -635,7 +630,6 @@ def gerar_relatorio_rotatividade_produtos():
 
     pdf.output("relatorio_rotatividade_produtos.pdf")
 
-
 def gerar_relatorio_movimentacoes():
     logger.info(f"Gerando relatorio de movimentações de estoque")
     pdf = FPDF()
@@ -666,6 +660,9 @@ def gerar_relatorio_movimentacoes():
             "Devolução": (255, 255, 0),
             "Venda": (173, 216, 230),
             "Vencido": (255, 165, 0),
+            "Perda/Avaria":(255, 165, 0),
+            "Balanço":(0, 235, 35)
+            
         }
 
         for row in cursor.fetchall():
@@ -682,9 +679,7 @@ def gerar_relatorio_movimentacoes():
 
     pdf.output("relatorio_movimentacoes.pdf")
 
-
 def obter_cor_fundo(validade_str, hoje_str, data_limite_str):
-    """Obtém a cor de fundo para o relatório baseado na validade do produto."""
     validade = datetime.strptime(validade_str, "%d/%m/%Y")
     hoje = datetime.strptime(hoje_str, "%d/%m/%Y")
     data_limite = datetime.strptime(data_limite_str, "%d/%m/%Y")
@@ -697,3 +692,71 @@ def obter_cor_fundo(validade_str, hoje_str, data_limite_str):
         return colors.yellow
     else:
         return colors.beige
+
+def obter_movimentacoes_ultimos_30_dias():
+    query = """
+    SELECT motivo, tipo, SUM(valor) as total_valor
+    FROM movimentacoes
+    WHERE data >= ?
+    GROUP BY motivo, tipo
+    ORDER BY tipo, motivo
+    """
+    data_limite = datetime.now() - timedelta(days=30)
+    with conectar_bd() as (conn, cursor):
+        cursor.execute(query, (data_limite,))
+        resultados = cursor.fetchall()
+    return resultados
+
+def gerar_relatorio_pl():
+    movimentacoes = obter_movimentacoes_ultimos_30_dias()
+    logger.info(f"Gerando relatorio P&L")
+    # Configuração do PDF
+    pdf = FPDF()
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.add_page()
+    
+    pdf.set_font('Arial', 'B', 16)
+    pdf.cell(200, 10, 'Relatório P&L (Últimos 30 dias)', ln=True, align='C')
+    
+    pdf.set_font('Arial', '', 12)
+    pdf.ln(10)  # Espaço entre título e tabela
+
+    total_ganhos = 0
+    total_perdas = 0
+
+    for movimento in movimentacoes:
+        motivo, tipo, total_valor = movimento
+        
+        if motivo in ["Venda", "Balanco"]:
+            pdf.set_fill_color(200, 255, 200)  # Verde claro suave para ganhos
+            total_ganhos += total_valor
+        else:
+            pdf.set_fill_color(255, 200, 200)  # Vermelho suave para perdas
+            total_perdas += total_valor
+
+        pdf.cell(80, 10, motivo, border=1, ln=0, fill=True)
+        pdf.cell(30, 10, tipo, border=1, ln=0, fill=True)
+        pdf.cell(40, 10, f'R$ {total_valor:.2f}', border=1, ln=1, fill=True)
+
+    # Totalizadores
+    pdf.ln(10)
+    pdf.set_font('Arial', 'B', 12)
+    pdf.cell(80, 10, 'Total Ganhos:', border=1, ln=0)
+    pdf.cell(40, 10, f'R$ {total_ganhos:.2f}', border=1, ln=1)
+
+    pdf.cell(80, 10, 'Total Perdas:', border=1, ln=0)
+    pdf.cell(40, 10, f'R$ {total_perdas:.2f}', border=1, ln=1)
+
+    diferenca = total_ganhos - total_perdas
+    if diferenca >= 0:
+        pdf.set_fill_color(200, 255, 200)  # Verde claro para saldo positivo
+    else:
+        pdf.set_fill_color(255, 200, 200)  # Vermelho para saldo negativo
+
+    pdf.cell(80, 10, 'Diferença Total:', border=1, ln=0, fill=True)
+    pdf.cell(40, 10, f'R$ {diferenca:.2f}', border=1, ln=1, fill=True)
+
+    # Salvar o PDF
+    pdf.output('relatorio_pl.pdf')
+    print("Relatório P&L gerado com sucesso!")
+
