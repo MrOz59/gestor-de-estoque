@@ -26,7 +26,7 @@ Este repositório contém o código-fonte para um sistema de controle de estoque
 - 
 ## Licença
 
-Este projeto está licenciado sob a Licença MIT - veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+Este projeto está licenciado sob a Licença de Uso e Distribuição do Software - veja o arquivo [LICENSE](LICENSE) para detalhes.
 
 ## Contato
 
