@@ -24,6 +24,7 @@ Este repositório contém o código-fonte para um sistema de controle de estoque
 - **`main.py`**: Arquivo principal que inicia o aplicativo e gerencia a interface gráfica.
 - **`interface.py`**: Contém a definição da interface gráfica e gerenciamento das abas.
 - **`db.py`**: Gerencia as operações do banco de dados, incluindo consultas e atualizações.
+- **`logs.py`**: Responsavel por gerar um log para facilicar a depuração em caso erros ou falhas.
 - **`README.md`**: Documentação do projeto.
 - **`LICENSE`**: Detalhes da licença do software.
 
