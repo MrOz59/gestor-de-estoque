@@ -1,4 +1,4 @@
-# Kalymos e um app para genreciamento de estoque com foco em pequenas empresas e lojas
+# Kalymos é um app para genreciamento de estoque com foco em pequenas empresas e lojas
 
 ## Descrição
 
