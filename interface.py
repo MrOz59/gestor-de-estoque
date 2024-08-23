@@ -1,3 +1,5 @@
+import os
+import sys
 import tkinter as tk
 from tkinter import ttk
 from datetime import datetime
@@ -15,6 +17,13 @@ class Aplicacao(tk.Tk):
         logger = configurar_logs()
         logger.info("Interface grafica iniciada.")
         super().__init__()
+        if hasattr(sys, '_MEIPASS'):
+            # Se o aplicativo foi empacotado com PyInstaller ou PyOxidizer
+            icon_path = os.path.join(sys._MEIPASS, 'icon.ico')
+        else:
+            # Se o aplicativo está sendo executado no ambiente de desenvolvimento
+            icon_path = os.path.join(os.path.dirname(__file__), 'icon.ico')
+        self.iconbitmap('icon.ico')
         self.title("Kalymos")
         self.geometry("600x400")
         self.state('zoomed')
