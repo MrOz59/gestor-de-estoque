@@ -34,7 +34,7 @@ Este projeto está licenciado sob a Licença Personalizada de Uso e Distribuiç�
 ## Atualizações e Scripts
 - **`updater.py`**: Integrado no arquivo principal(`Kalymos.exe`), este modulo é responsavel por buscar e baixar novas atualizações.
 - **`update_helper.exe`**: Executável para auxiliar na instalação das atualizações.
-- **`gerar_update.py`**: Script auxiliar que gera uma distro do app(`PyInstaller`) faz a compactação, gera a hash SHA256 para que uma atualização possa ser publicada.
+- **`gerar_update.py`**: Script auxiliar que gera uma distro do app([`PyInstaller`](https://github.com/pyinstaller)) faz a compactação, gera a hash SHA256 para que uma atualização possa ser publicada.
 
 ## Contato
 
