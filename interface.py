@@ -24,7 +24,7 @@ class Aplicacao(tk.Tk):
             # Se o aplicativo está sendo executado no ambiente de desenvolvimento
             icon_path = os.path.join(os.path.dirname(__file__), 'icon.ico')
         self.iconbitmap('icon.ico')
-        self.title("Kalymos")
+        self.title("Kalymos 1.3.0")
         self.geometry("600x400")
         self.state('zoomed')
 
