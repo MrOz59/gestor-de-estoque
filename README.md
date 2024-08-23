@@ -1,8 +1,10 @@
-# Kalymos é um app para genreciamento de estoque com foco em pequenas empresas e lojas
+# Kalymos
+
+Kalymos é um aplicativo para gerenciamento de estoque com foco em pequenas empresas e lojas.
 
 ## Descrição
 
-Este repositório contém o código-fonte para um sistema de controle de estoque desenvolvido para a pequenas lojas que precisem de um controle de validade e lotes simples. O aplicativo foi projetado para ajudar a gerenciar o estoque de produtos, controlar entradas e saídas, e gerar relatórios para melhorar a eficiência e organização do negócio.
+Este repositório contém o código-fonte para um sistema de controle de estoque desenvolvido para pequenas lojas que necessitam de um controle de validade e lotes simples. O aplicativo foi projetado para ajudar a gerenciar o estoque de produtos, controlar entradas e saídas e gerar relatórios para melhorar a eficiência e organização do negócio.
 
 ## Funcionalidades
 
@@ -23,10 +25,16 @@ Este repositório contém o código-fonte para um sistema de controle de estoque
 - **`interface.py`**: Contém a definição da interface gráfica e gerenciamento das abas.
 - **`db.py`**: Gerencia as operações do banco de dados, incluindo consultas e atualizações.
 - **`README.md`**: Documentação do projeto.
-- 
+- **`LICENSE`**: Detalhes da licença do software.
+
 ## Licença
 
-Este projeto está licenciado sob a Licença de Uso e Distribuição do Software - veja o arquivo [LICENSE](LICENSE) para detalhes.
+Este projeto está licenciado sob a Licença Personalizada de Uso e Distribuição do Software. A licença permite o uso comercial do software, mas proíbe a venda, redistribuição, sublicenciamento ou transferência do software sem permissão expressa. O código-fonte e partes dele não podem ser utilizados sem autorização. Veja o arquivo [LICENSE](LICENSE) para detalhes completos.
+
+## Atualizações e Scripts
+- **`updater.py`**: Integrado no arquivo principal(`Kalymos.exe`), este modulo é responsavel por buscar e baixar novas atualizações.
+- **`update_helper.exe`**: Executável para auxiliar na instalação das atualizações.
+- **`gerar_update.py`**: Script auxiliar que gera uma distro do app(`PyInstaller`) faz a compactação, gera a hash SHA256 para que uma atualização possa ser publicada.
 
 ## Contato
 
