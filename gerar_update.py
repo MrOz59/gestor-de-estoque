@@ -3,6 +3,7 @@ import shutil
 import subprocess
 import zipfile
 from datetime import datetime
+import hashlib
 
 def criar_diretorio(destino):
     """Cria o diretório especificado se ele não existir."""
@@ -13,7 +14,7 @@ def gerar_dist_com_pyinstaller(script, destino):
     """Gera a distribuição usando PyInstaller para o diretório de destino."""
     try:
         # Comando do PyInstaller para gerar a distribuição
-        comando = f'pyinstaller --distpath {destino} --onefile -n Kalymos --icon icon.ico {script}'
+        comando = f'pyinstaller --distpath {destino} --onefile --windowed -n Kalymos --icon icon.ico {script}'
         subprocess.run(comando, check=True, shell=True)
         print(f"Distribuição gerada com sucesso em: {destino}")
     except subprocess.CalledProcessError as e:
@@ -41,18 +42,33 @@ def compactar_arquivos_em_zip(diretorio_origem, zip_destino):
     except Exception as e:
         print(f"Erro ao compactar os arquivos: {e}")
 
-def executar_hash_generator(caminho_executavel):
-    """Executa o hash_generator.exe."""
+def calcular_hash_arquivo(arquivo):
+    """Calcula o hash SHA-256 do arquivo especificado."""
+    hash_sha256 = hashlib.sha256()
     try:
-        subprocess.run(caminho_executavel, check=True, shell=True)
-        print(f"Hash generator executado com sucesso: {caminho_executavel}")
-    except subprocess.CalledProcessError as e:
-        print(f"Erro ao executar o hash_generator.exe: {e}")
+        with open(arquivo, "rb") as f:
+            while chunk := f.read(8192):
+                hash_sha256.update(chunk)
+        return hash_sha256.hexdigest()
+    except Exception as e:
+        print(f"Erro ao calcular hash do arquivo: {e}")
+        return None
+
+def gerar_metadados_hash(arquivo, arquivo_saida):
+    """Gera um arquivo com o hash do arquivo especificado."""
+    hash_calculado = calcular_hash_arquivo(arquivo)
+    if hash_calculado:
+        try:
+            with open(arquivo_saida, "w") as f:
+                f.write(hash_calculado)
+            print(f"Hash do arquivo {arquivo} gerado com sucesso em {arquivo_saida}")
+        except Exception as e:
+            print(f"Erro ao salvar o hash em {arquivo_saida}: {e}")
 
 def main():
     # Define as variáveis de caminho e diretório
     data_atual = datetime.now().strftime("%Y-%m-%d")
-    diretorio_update = f"kalymos-update-{data_atual}"
+    diretorio_update = f"dist/kalymos-update-{data_atual}"
     criar_diretorio(diretorio_update)
     
     # Gera a distribuição usando o PyInstaller
@@ -64,17 +80,15 @@ def main():
     zip_destino = os.path.join(diretorio_update, "update.zip")
     compactar_arquivos_em_zip(destino_dist, zip_destino)
     
-    # Copia os arquivos hash_generator.exe, update_helper.exe e icon.ico para o diretório raiz
+    # Copia os arquivos update_helper.exe e icon.ico para o diretório raiz
     arquivos_para_copiar = [
-        os.path.join('dist', 'hash_generator.exe'),
         os.path.join('dist', 'update_helper.exe'),
         'icon.ico'
     ]
     copiar_arquivos_para_raiz(diretorio_update, arquivos_para_copiar)
     
-    # Executa o hash_generator.exe para gerar o hash do arquivo ZIP
-    caminho_hash_generator = os.path.join(diretorio_update, 'hash_generator.exe')
-    executar_hash_generator(caminho_hash_generator)
+    # Gera o hash do arquivo ZIP
+    gerar_metadados_hash(zip_destino, os.path.join(diretorio_update, 'update.zip.sha256'))
 
 if __name__ == "__main__":
     main()
