@@ -25,17 +25,16 @@ Este repositório contém o código-fonte para um sistema de controle de estoque
 - **`interface.py`**: Contém a definição da interface gráfica e gerenciamento das abas.
 - **`db.py`**: Gerencia as operações do banco de dados, incluindo consultas e atualizações.
 - **`logs.py`**: Responsavel por gerar um log para facilicar a depuração em caso erros ou falhas.
-- **`README.md`**: Documentação do projeto.
-- **`LICENSE`**: Detalhes da licença do software.
-
-## Licença
-
-Este projeto está licenciado sob a Licença Personalizada de Uso e Distribuição do Software. A licença permite o uso comercial do software, mas proíbe a venda, redistribuição, sublicenciamento ou transferência do software sem permissão expressa. O código-fonte e partes dele não podem ser utilizados sem autorização. Veja o arquivo [LICENSE](LICENSE) para detalhes completos.
 
 ## Atualizações e Scripts
 - **`updater.py`**: Integrado no arquivo principal(`Kalymos.exe`), este modulo é responsavel por buscar e baixar novas atualizações.
 - **`update_helper.exe`**: Executável para auxiliar na instalação das atualizações.
 - **`gerar_update.py`**: Script auxiliar que gera uma distro do app([`PyInstaller`](https://github.com/pyinstaller)) faz a compactação, gera a hash SHA256 para que uma atualização possa ser publicada.
+
+## Licença
+
+Este projeto está licenciado sob a Licença Personalizada de Uso e Distribuição do Software. A licença permite o uso comercial do software, mas proíbe a venda, redistribuição, sublicenciamento ou transferência do software sem permissão expressa. O código-fonte e partes dele não podem ser utilizados sem autorização. Veja o arquivo [LICENSE](LICENSE) para detalhes completos.
+
 
 ## Contato
 
