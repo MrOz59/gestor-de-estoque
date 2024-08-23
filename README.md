@@ -13,7 +13,7 @@ Este repositório contém o código-fonte para um sistema de controle de estoque
 - **Relatórios**: Gerar relatórios de estoque e movimentação de produtos.
 - **Busca**: Buscar produtos por nome, SKU, lote ou fornecedor.
 
-## Tecnologias Utilizadas
+## Principais Tecnologias Utilizadas
 
 - **Python**: Linguagem de programação usada para o desenvolvimento do aplicativo.
 - **SQLite**: Sistema de banco de dados usado para armazenar informações de produtos e movimentações.
