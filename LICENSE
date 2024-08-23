@@ -1,21 +1,26 @@
-MIT License
+1. Concessão de Licença
 
-Copyright (c) 2024 MrOz
+O presente software, incluindo todos os arquivos, códigos, documentações e outros componentes (doravante denominado "Software"), é licenciado e não vendido. O licenciante concede ao licenciado uma licença não exclusiva, intransferível e revogável para usar o Software nas seguintes condições.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+2. Uso Permitido
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+O Software pode ser utilizado comercialmente pelo licenciado, desde que não seja vendido, redistribuído, sublicenciado ou transferido para terceiros. O licenciado pode usar o Software para fins pessoais, comerciais e profissionais, desde que a distribuição do Software ou de suas partes não ocorra sem permissão expressa por escrito do licenciante.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+3. Restrições
+
+O licenciado não pode:
+
+Vender, alugar, emprestar, sublicenciar ou redistribuir o Software, seja em sua forma original ou modificada, sem permissão expressa do licenciante.
+Reverter a engenharia, desmontar, descompilar ou realizar qualquer tentativa de derivar o código-fonte do Software.
+Utilizar o Software para criar trabalhos derivados ou para qualquer outro propósito que possa violar os direitos autorais ou outras leis de propriedade intelectual.
+4. Propriedade Intelectual
+
+Todos os direitos, títulos e interesses relacionados ao Software, incluindo direitos autorais e outras propriedades intelectuais, permanecem exclusivamente com o licenciante. Esta licença não confere ao licenciado nenhum direito de propriedade sobre o Software.
+
+5. Termo e Rescisão
+
+Esta licença é concedida por prazo indeterminado, salvo se rescindida pelo licenciante. O licenciante pode rescindir esta licença a qualquer momento, se o licenciado violar os termos desta licença. Em caso de rescisão, o licenciado deve cessar imediatamente o uso do Software e excluir todas as cópias do Software em sua posse.
+
+6. Isenção de Garantias
+
+O Software é fornecido "no estado em que se encontra" e o licenciante não oferece garantias de qualquer tipo, expressas ou implícitas, incluindo, mas não se limitando a, garantias de comerciabilidade ou adequação a um propósito específico. O licenciante não será responsável por quaisquer danos diretos, indiretos, especiais ou consequenciais decorrentes do uso ou da impossibilidade de uso do Software.
