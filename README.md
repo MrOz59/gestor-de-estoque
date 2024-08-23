@@ -1,4 +1,4 @@
-# App para Controle de Estoque
+# Kalymos e um app para genreciamento de estoque com foco em pequenas empresas e lojas
 
 ## Descrição
 
