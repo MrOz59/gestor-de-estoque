@@ -4,12 +4,10 @@ from logs import configurar_logs
 import updater
 
 def main():
-    # Versão atual do aplicativo
-    versao_atual = "v1.3.0"  # Substitua pela versão real do seu aplicativo
+    versao_atual = "v1.4.0"
 
-    # Verificar se há uma atualização disponível
     if updater.verificar_atualizacao(versao_atual):
-        # Se houver atualização e for aplicada, o aplicativo será reiniciado
+        
         return
 
     # Configurar logs
@@ -19,7 +17,7 @@ def main():
     try:
         criar_tabelas()
         logger.info("Tentando iniciar a interface gráfica.")
-        app = Aplicacao()
+        app = Aplicacao(versao_atual)
         app.mainloop()
         logger.info("App encerrando.")
     except Exception as e:

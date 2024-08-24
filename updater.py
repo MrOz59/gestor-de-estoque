@@ -2,7 +2,6 @@ import requests
 import zipfile
 import os
 import hashlib
-import subprocess
 import tkinter as tk
 from tkinter import messagebox
 import sys
@@ -36,25 +35,21 @@ def verificar_hash(file_path, hash_esperado):
 def baixar_e_verificar_atualizacao(download_url, hash_url):
     """Baixa o arquivo de atualização e verifica sua integridade com o hash fornecido."""
     try:
-        # Baixar o arquivo de atualização
         print(f"Iniciando o download de {download_url}...")
         response = requests.get(download_url, stream=True)
         response.raise_for_status()
         
-        # Salvar o arquivo ZIP
         with open("update.zip", "wb") as f:
             for chunk in response.iter_content(chunk_size=8192):
                 if chunk:
                     f.write(chunk)
         print("Arquivo update.zip baixado com sucesso.")
         
-        # Baixar o arquivo de hash
         print(f"Iniciando o download do arquivo de hash de {hash_url}...")
         response = requests.get(hash_url)
         response.raise_for_status()
         hash_esperado = response.text.strip()
         
-        # Verificar hash do arquivo
         if not verificar_hash("update.zip", hash_esperado):
             print("A hash do arquivo baixado não confere.")
             return False
@@ -84,7 +79,7 @@ def extrair_atualizacao(caminho_zip, diretorio_destino):
 
 def executar_como_administrador_oculto(executavel, *params):
     """Executa o comando fornecido como administrador, sem mostrar a janela de terminal."""
-    params_str = ' '.join([f'"{param}"' for param in params])  # Formata os parâmetros
+    params_str = ' '.join([f'"{param}"' for param in params])
     try:
         SW_HIDE = 0
         ctypes.windll.shell32.ShellExecuteW(None, "runas", executavel, params_str, None, SW_HIDE)
@@ -94,17 +89,11 @@ def executar_como_administrador_oculto(executavel, *params):
 def substituir_arquivos():
     """Substitui os arquivos baixados no diretório principal."""
     try:
-        # Verifica e cria o diretório temporário, se necessário
         diretorio_temp = "update_temp"
         criar_diretorio(diretorio_temp)
-
-        # Extrai o conteúdo do arquivo zip para o diretório temporário
         extrair_atualizacao("update.zip", diretorio_temp)
-
-        # Executa o helper para substituir os arquivos com privilégios de administrador, sem exibir o terminal
         print("Executando update_helper.exe como administrador (oculto)...")
         executar_como_administrador_oculto("update_helper.exe")
-
     except Exception as e:
         print(f"Erro ao substituir os arquivos: {e}")
 
@@ -114,13 +103,10 @@ def verificar_atualizacao(versao_atual):
     if not ultima_versao:
         print("Não foi possível obter a última versão.")
         return False
-
+    print("Versão atual: " + versao_atual + " Nova Versão: " + ultima_versao)
     if versao_atual < ultima_versao:
-        # Inicializa o Tkinter para a caixa de diálogo
         root = tk.Tk()
-        root.withdraw()  # Oculta a janela principal do Tkinter
-        
-        # Mostra a caixa de diálogo yes/no
+        root.withdraw()
         user_response = messagebox.askyesno(
             "Atualização Disponível",
             f"Uma nova versão ({ultima_versao}) está disponível. Deseja atualizar?"
@@ -144,4 +130,3 @@ def verificar_atualizacao(versao_atual):
     else:
         print("Você já está na versão mais recente.")
         return False
-

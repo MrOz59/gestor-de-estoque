@@ -13,7 +13,7 @@ gerar_relatorio_estoque,gerar_relatorio_pl
 )
 
 class Aplicacao(tk.Tk):
-    def __init__(self):
+    def __init__(self,versao):
         logger = configurar_logs()
         logger.info("Interface grafica iniciada.")
         super().__init__()
@@ -24,7 +24,7 @@ class Aplicacao(tk.Tk):
             # Se o aplicativo está sendo executado no ambiente de desenvolvimento
             icon_path = os.path.join(os.path.dirname(__file__), 'icon.ico')
         self.iconbitmap('icon.ico')
-        self.title("Kalymos 1.3.0")
+        self.title("Kalymos " + versao)
         self.geometry("600x400")
         self.state('zoomed')
 
