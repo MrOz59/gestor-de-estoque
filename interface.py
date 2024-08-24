@@ -49,25 +49,34 @@ class Aplicacao(tk.Tk):
         self.buscar_btn.pack(padx=10, pady=5, side=tk.LEFT)
 
         # Treeview para a lista de produtos
-        self.tree = ttk.Treeview(self.produto_frame, columns=('Nome', 'SKU', 'Fornecedor', 'Preço', 'PreçoVenda', 'Lote', 'Validade', 'Quantidade'), show='headings')
-        self.tree.heading('Nome', text='Nome')
-        self.tree.heading('SKU', text='SKU')
-        self.tree.heading('Fornecedor', text='Fornecedor')
-        self.tree.heading('Preço', text='Preço')
-        self.tree.heading('PreçoVenda', text='Preço de Venda')
-        self.tree.heading('Lote', text='Lote')
-        self.tree.heading('Validade', text='Validade')
-        self.tree.heading('Quantidade', text='Quantidade')
-        self.tree.column('Nome', width=100)
-        self.tree.column('SKU', width=80)
-        self.tree.column('Fornecedor', width=100)
-        self.tree.column('Preço', width=70)
-        self.tree.column('PreçoVenda', width=100)
-        self.tree.column('Lote', width=70)
-        self.tree.column('Validade', width=90)
-        self.tree.column('Quantidade', width=50)
+        self.tree = ttk.Treeview(
+            self.produto_frame, 
+            columns=('Nome', 'SKU', 'Fornecedor', 'Preço', 'PreçoVenda', 'Lote', 'Validade', 'Quantidade'), 
+            show='headings'
+        )
+
+        # Configurando as colunas com cabeçalhos
+        self.tree.heading('Nome', text='Nome', anchor=tk.CENTER)
+        self.tree.heading('SKU', text='SKU', anchor=tk.CENTER)
+        self.tree.heading('Fornecedor', text='Fornecedor', anchor=tk.CENTER)
+        self.tree.heading('Preço', text='Preço', anchor=tk.CENTER)
+        self.tree.heading('PreçoVenda', text='Preço de Venda', anchor=tk.CENTER)
+        self.tree.heading('Lote', text='Lote', anchor=tk.CENTER)
+        self.tree.heading('Validade', text='Validade', anchor=tk.CENTER)
+        self.tree.heading('Quantidade', text='Quantidade', anchor=tk.CENTER)
+
+        # Configurando o tamanho das colunas e centralizando o conteúdo
+        self.tree.column('Nome', width=100, anchor=tk.CENTER)
+        self.tree.column('SKU', width=80, anchor=tk.CENTER)
+        self.tree.column('Fornecedor', width=100, anchor=tk.CENTER)
+        self.tree.column('Preço', width=70, anchor=tk.CENTER)
+        self.tree.column('PreçoVenda', width=100, anchor=tk.CENTER)
+        self.tree.column('Lote', width=70, anchor=tk.CENTER)
+        self.tree.column('Validade', width=90, anchor=tk.CENTER)
+        self.tree.column('Quantidade', width=50, anchor=tk.CENTER)
 
         self.tree.pack(pady=10, fill=tk.BOTH, expand=True)
+
 
         # Aba Produtos
         self.aba_produtos = ttk.Frame(self.notebook)

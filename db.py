@@ -304,7 +304,7 @@ def adicionar_entrada(sku, lote, validade, quantidade, motivo, substituir):
             )
 
         # Registrar movimentação de entrada utilizando a mesma conexão e cursor
-        registrar_movimentacao(cursor, conn, "Entrada", sku, lote, quantidade, motivo, valor)
+        registrar_movimentacao(cursor, "Entrada", sku, lote, quantidade, motivo, valor)
         logger.info(f"Entrada atualizada: SKU {sku}, Lote {lote}.")
         conn.commit()
         return {"status": "sucesso", "mensagem": "Entrada adicionada com sucesso!"}
@@ -321,8 +321,8 @@ def adicionar_saida(sku, lote, quantidade, motivo):
         # Verificar quantidade disponível no lote
         cursor.execute(
             """
-        SELECT quantidade FROM lotes WHERE sku = ? AND lote = ?
-        """,
+            SELECT quantidade FROM lotes WHERE sku = ? AND lote = ?
+            """,
             (sku, lote),
         )
         resultado = cursor.fetchone()
@@ -345,20 +345,28 @@ def adicionar_saida(sku, lote, quantidade, motivo):
         nova_quantidade = quantidade_disponivel - int(quantidade)
         cursor.execute(
             """
-        UPDATE lotes
-        SET quantidade = ?
-        WHERE sku = ? AND lote = ?
-        """,
+            UPDATE lotes
+            SET quantidade = ?
+            WHERE sku = ? AND lote = ?
+            """,
             (nova_quantidade, sku, lote),
         )
+
+        # Registrar a movimentação de saída
         cursor.execute("SELECT preco FROM produtos WHERE sku = ?", (sku,))
         preco = cursor.fetchone()[0]
-        registrar_movimentacao(cursor, conn, "Saída", sku, lote, quantidade, motivo,preco)
+        registrar_movimentacao(cursor, "Saída", sku, lote, quantidade, motivo, preco)
         logger.info(f"Saída registrada: SKU {sku}, Lote {lote}.")
+
+        # Verificar se a nova quantidade é zero e remover o lote se necessário
+        if nova_quantidade == 0:
+            logger.info(f"Quantidade do lote {lote} para SKU {sku} é zero. Removendo lote.")
+            remover_lote(sku, lote, cursor)
+        
         conn.commit()
         return {"status": "sucesso", "mensagem": "Saída adicionada com sucesso!"}
 
-def registrar_movimentacao(cursor, conn, tipo, sku, lote, quantidade, motivo,valor):
+def registrar_movimentacao(cursor, tipo, sku, lote, quantidade, motivo,valor):
     logger.info(
         f"Registrandomovimentção de estoque: Tipo:{tipo}, SKU:{sku}, Lote:{lote}, Quantidade:{quantidade}, Motivo:{motivo}"
     )
@@ -371,13 +379,15 @@ def registrar_movimentacao(cursor, conn, tipo, sku, lote, quantidade, motivo,val
         (data, tipo, sku, lote, quantidade, motivo, valor),
     )
 
-def remover_lote(sku, lote):
-    logger.info(f"Removendo lote sem estoque, Lote:{lote}, SKU:{sku}.")
-    """Remove um lote do banco de dados e registra a movimentação."""
-    with conectar_bd() as (conn, cursor):
-        cursor.execute("DELETE FROM lotes WHERE sku = ? AND lote = ?", (sku, lote))
-        conn.commit()
-        registrar_movimentacao("Remoção", sku, lote, 0)
+def remover_lote(sku, lote,cursor):
+        logger.info(f"Removendo lote: SKU {sku}, Lote {lote}.")
+        cursor.execute(
+            """
+            DELETE FROM lotes WHERE sku = ? AND lote = ?
+            """,
+            (sku, lote),
+        )
+        logger.info(f"Lote removido: SKU {sku}, Lote {lote}.")
 
 def comparar_datas(data1, data2):
     d1 = datetime.strptime(data1, "%d/%m/%Y")
@@ -692,24 +702,36 @@ def obter_cor_fundo(validade_str, hoje_str, data_limite_str):
         return colors.yellow
     else:
         return colors.beige
-
+    
 def obter_movimentacoes_ultimos_30_dias():
     query = """
-    SELECT motivo, tipo, SUM(valor) as total_valor
-    FROM movimentacoes
-    WHERE data >= ?
-    GROUP BY motivo, tipo
-    ORDER BY tipo, motivo
+    SELECT 
+        m.motivo, 
+        m.tipo, 
+        p.sku,
+        p.preco, 
+        m.quantidade,
+        (p.preco * m.quantidade) as total_valor_perda,
+        (p.preco * p.fator * m.quantidade) as total_valor_venda,
+        (p.preco * p.fator) as valor_venda
+    FROM movimentacoes m
+    JOIN produtos p ON m.sku = p.sku
+    WHERE m.data >= ?
+    ORDER BY m.tipo, m.motivo
     """
+    
     data_limite = datetime.now() - timedelta(days=30)
+    
     with conectar_bd() as (conn, cursor):
         cursor.execute(query, (data_limite,))
         resultados = cursor.fetchall()
+    
     return resultados
 
 def gerar_relatorio_pl():
     movimentacoes = obter_movimentacoes_ultimos_30_dias()
-    logger.info(f"Gerando relatorio P&L")
+    logger.info("Gerando relatorio P&L")
+
     # Configuração do PDF
     pdf = FPDF()
     pdf.set_auto_page_break(auto=True, margin=15)
@@ -721,22 +743,44 @@ def gerar_relatorio_pl():
     pdf.set_font('Arial', '', 12)
     pdf.ln(10)  # Espaço entre título e tabela
 
+    # Cabeçalho da tabela
+    pdf.set_font('Arial', 'B', 12)
+    pdf.cell(40, 10, 'Motivo', border=1)
+    pdf.cell(30, 10, 'Tipo', border=1)
+    pdf.cell(30, 10, 'SKU', border=1)
+    pdf.cell(30, 10, 'Preço Unitário', border=1)
+    pdf.cell(30, 10, 'Quantidade', border=1)
+    pdf.cell(40, 10, 'Valor Total', border=1, ln=1)
+    
     total_ganhos = 0
     total_perdas = 0
 
+    pdf.set_font('Arial', '', 12)
     for movimento in movimentacoes:
-        motivo, tipo, total_valor = movimento
-        
-        if motivo in ["Venda", "Balanco"]:
-            pdf.set_fill_color(200, 255, 200)  # Verde claro suave para ganhos
-            total_ganhos += total_valor
-        else:
-            pdf.set_fill_color(255, 200, 200)  # Vermelho suave para perdas
-            total_perdas += total_valor
+        motivo, tipo, sku, preco_unitario, quantidade, total_valor_perda, total_valor_venda, valor_venda = movimento
 
-        pdf.cell(80, 10, motivo, border=1, ln=0, fill=True)
+        if motivo == "Venda":
+            preco_utilizado = valor_venda
+            valor_total = total_valor_venda
+            pdf.set_fill_color(200, 255, 200)
+            total_ganhos += valor_total
+        elif motivo == "Balanco":
+            preco_utilizado = preco_unitario
+            valor_total = total_valor_venda
+            pdf.set_fill_color(200, 255, 200)
+            total_ganhos += valor_total
+        else:
+            preco_utilizado = preco_unitario  
+            valor_total = total_valor_perda
+            pdf.set_fill_color(255, 200, 200)  
+            total_perdas += valor_total
+
+        pdf.cell(40, 10, motivo, border=1, ln=0, fill=True)
         pdf.cell(30, 10, tipo, border=1, ln=0, fill=True)
-        pdf.cell(40, 10, f'R$ {total_valor:.2f}', border=1, ln=1, fill=True)
+        pdf.cell(30, 10, sku, border=1, ln=0, fill=True)
+        pdf.cell(30, 10, f'R$ {preco_utilizado:.2f}', border=1, ln=0, fill=True) 
+        pdf.cell(30, 10, str(quantidade), border=1, ln=0, fill=True)
+        pdf.cell(40, 10, f'R$ {valor_total:.2f}', border=1, ln=1, fill=True)
 
     # Totalizadores
     pdf.ln(10)
@@ -749,9 +793,9 @@ def gerar_relatorio_pl():
 
     diferenca = total_ganhos - total_perdas
     if diferenca >= 0:
-        pdf.set_fill_color(200, 255, 200)  # Verde claro para saldo positivo
+        pdf.set_fill_color(200, 255, 200)  
     else:
-        pdf.set_fill_color(255, 200, 200)  # Vermelho para saldo negativo
+        pdf.set_fill_color(255, 200, 200)  
 
     pdf.cell(80, 10, 'Diferença Total:', border=1, ln=0, fill=True)
     pdf.cell(40, 10, f'R$ {diferenca:.2f}', border=1, ln=1, fill=True)
@@ -759,4 +803,3 @@ def gerar_relatorio_pl():
     # Salvar o PDF
     pdf.output('kalymos_relatorio_pl.pdf')
     print("Relatório P&L gerado com sucesso!")
-
