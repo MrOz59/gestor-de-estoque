@@ -53,8 +53,8 @@ def ensure_updater(updater_version, skip_update_check=False):
         if skip_update_check:
             print(f"{updater_filename} found. Skipping update check as per configuration.")
             print("Running the updater...")
-            subprocess.run([updater_filename])  # No need for shell=True
-            return False  # No need to download again
+            subprocess.run([updater_filename])
+            return False  
         else:
             # Check for updates (not implemented)
             print(f"{updater_filename} found. Checking for updates...")
