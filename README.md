@@ -24,20 +24,19 @@ Este repositório contém o código-fonte para um sistema de controle de estoque
 - **`main.py`**: Arquivo principal que inicia o aplicativo e gerencia a interface gráfica.
 - **`interface.py`**: Contém a definição da interface gráfica e gerenciamento das abas.
 - **`db.py`**: Gerencia as operações do banco de dados, incluindo consultas e atualizações.
-- **`logs.py`**: Responsavel por gerar um log para facilicar a depuração em caso erros ou falhas.
+- **`logs.py`**: Responsável por gerar logs para facilitar a depuração em caso de erros ou falhas.
 
 ## Atualizações e Scripts
-- **`updater.py`**: Integrado no arquivo principal(`Kalymos.exe`), este modulo é responsavel por buscar e baixar novas atualizações.
-- **`update_helper.py`**: Este é um modulo externo, distribuido como um executável para auxiliar na instalação das atualizações.
-- **`gerar_update.py`**: Script auxiliar que gera uma distro do app([`PyInstaller`](https://github.com/pyinstaller)) faz a compactação, gera a hash SHA256 para que uma atualização possa ser publicada, não disponivel no produto final.
+
+- **`update_manager.py`**: Novo módulo integrado para gerenciar atualizações. Funciona em conjunto com o [Kalymos Updater](https://github.com/MrOz59/Kalymos-updater) para baixar e aplicar atualizações.
+- **`Kalymos Updater`**: Aplicativo autônomo responsável por gerenciar o processo de atualização do Kalymos. Detalhes disponíveis no [repositório Kalymos Updater](https://github.com/MrOz59/Kalymos-updater).
+- **`gerar_update.py`**: Script auxiliar que gera uma distribuição do aplicativo usando [`PyInstaller`](https://github.com/pyinstaller), realiza a compactação e gera a hash SHA256 para publicação de atualizações. Não disponível no produto final.
 
 ## Licença
 
 Este projeto está licenciado sob a Licença Personalizada de Uso e Distribuição do Software. A licença permite o uso comercial do software, mas proíbe a venda, redistribuição, sublicenciamento ou transferência do software sem permissão expressa. O código-fonte e partes dele não podem ser utilizados sem autorização. Veja o arquivo [LICENSE](LICENSE) para detalhes completos.
 
-
 ## Contato
 
 Para mais informações, entre em contato com:
 - **Oswaldo de Souza** - [oswaldo_de_souza@hotmail.com](mailto:oswaldo_de_souza@hotmail.com)
-
