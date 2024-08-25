@@ -1,3 +1,4 @@
+import time
 import os
 import shutil
 import sys
@@ -10,7 +11,8 @@ def verificar_e_fechar_aplicacao(nome_processo):
         if proc.info['name'] == nome_processo:
             try:
                 proc.terminate()  # Tenta fechar o processo
-                proc.wait(timeout=10)  # Aguarda até 5 segundos para o processo terminar
+                proc.wait(timeout=20)  # Aguarda até 5 segundos para o processo terminar
+                time.sleep(20)      
                 print(f"Processo {nome_processo} fechado com sucesso.")
             except psutil.NoSuchProcess:
                 print(f"Processo {nome_processo} não encontrado.")
@@ -22,6 +24,7 @@ def verificar_e_fechar_aplicacao(nome_processo):
     print(f"Processo {nome_processo} não está em execução.")
 
 def substituir_arquivos(diretorio_temp):
+    time.sleep(20)   
     """Substitui os arquivos do diretório temporário no diretório principal."""
     try:
         if not os.path.exists(diretorio_temp):

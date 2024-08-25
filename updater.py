@@ -15,7 +15,7 @@ def obter_ultima_versao():
         response = requests.get(f"{GITHUB_REPO}/releases/latest")
         response.raise_for_status()
         latest_release = response.json()
-        return latest_release['tag_name']
+        return latest_release
     except requests.RequestException as e:
         print(f"Erro ao verificar a última versão: {e}")
         return None
@@ -62,6 +62,32 @@ def baixar_e_verificar_atualizacao(download_url, hash_url):
         print(f"Erro ao verificar a atualização: {e}")
         return False
 
+def baixar_update_helper(versao_atual):
+    """Baixa o update_helper.exe se ele estiver disponível na release do GitHub."""
+    try:
+        release_info = obter_ultima_versao()
+        if not release_info:
+            return False
+        
+        assets = release_info.get('assets', [])
+        for asset in assets:
+            if asset['name'] == 'update_helper.exe':
+                update_helper_url = asset['browser_download_url']
+                print(f"Iniciando o download de {update_helper_url}...")
+                response = requests.get(update_helper_url, stream=True)
+                response.raise_for_status()
+                
+                with open("update_helper.exe", "wb") as f:
+                    for chunk in response.iter_content(chunk_size=8192):
+                        if chunk:
+                            f.write(chunk)
+                print("update_helper.exe baixado com sucesso.")
+                return True
+        return False
+    except requests.RequestException as e:
+        print(f"Erro ao baixar o update_helper.exe: {e}")
+        return False
+
 def criar_diretorio(diretorio):
     """Cria o diretório se ele não existir."""
     if not os.path.exists(diretorio):
@@ -92,18 +118,24 @@ def substituir_arquivos():
         diretorio_temp = "update_temp"
         criar_diretorio(diretorio_temp)
         extrair_atualizacao("update.zip", diretorio_temp)
+        
+        # Fecha o aplicativo atual
+        print("Fechando o aplicativo...")
+        # Executa update_helper.exe como administrador (oculto)
         print("Executando update_helper.exe como administrador (oculto)...")
         executar_como_administrador_oculto("update_helper.exe")
+        sys.exit()
     except Exception as e:
         print(f"Erro ao substituir os arquivos: {e}")
 
 def verificar_atualizacao(versao_atual):
     """Verifica se há uma nova versão disponível e pergunta ao usuário se deseja atualizar."""
-    ultima_versao = obter_ultima_versao()
-    if not ultima_versao:
+    release_info = obter_ultima_versao()
+    if not release_info:
         print("Não foi possível obter a última versão.")
         return False
-    print("Versão atual: " + versao_atual + " Nova Versão: " + ultima_versao)
+    
+    ultima_versao = release_info.get('tag_name')
     if versao_atual < ultima_versao:
         root = tk.Tk()
         root.withdraw()
@@ -113,15 +145,20 @@ def verificar_atualizacao(versao_atual):
         )
 
         if user_response:
-            download_url = f"https://github.com/MrOz59/kalymos/releases/download/{ultima_versao}/update.zip"
-            hash_url = f"https://github.com/MrOz59/kalymos/releases/download/{ultima_versao}/update.zip.sha256"
-            
-            if baixar_e_verificar_atualizacao(download_url, hash_url):
-                substituir_arquivos()
-                root.destroy()
-                sys.exit()
+            if baixar_update_helper(versao_atual):
+                download_url = f"https://github.com/MrOz59/kalymos/releases/download/{ultima_versao}/update.zip"
+                hash_url = f"https://github.com/MrOz59/kalymos/releases/download/{ultima_versao}/update.zip.sha256"
+                
+                if baixar_e_verificar_atualizacao(download_url, hash_url):
+                    substituir_arquivos()
+                    root.destroy()
+                    sys.exit()
+                else:
+                    messagebox.showwarning("Erro na Atualização", "A atualização falhou. O aplicativo será encerrado.")
+                    root.destroy()
+                    sys.exit()
             else:
-                messagebox.showwarning("Erro na Atualização", "A atualização falhou. O aplicativo será encerrado.")
+                messagebox.showwarning("Erro no Atualizador", "O arquivo update_helper.exe não pôde ser baixado.")
                 root.destroy()
                 sys.exit()
         else:
