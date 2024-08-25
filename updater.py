@@ -10,7 +10,6 @@ import ctypes
 GITHUB_REPO = "https://api.github.com/repos/MrOz59/kalymos"
 
 def obter_ultima_versao():
-    """Obtém a última versão disponível do GitHub."""
     try:
         response = requests.get(f"{GITHUB_REPO}/releases/latest")
         response.raise_for_status()
@@ -21,7 +20,6 @@ def obter_ultima_versao():
         return None
 
 def verificar_hash(file_path, hash_esperado):
-    """Verifica se o hash SHA256 do arquivo corresponde ao esperado."""
     hash_obj = hashlib.sha256()
     try:
         with open(file_path, "rb") as f:
@@ -33,7 +31,6 @@ def verificar_hash(file_path, hash_esperado):
         return False
 
 def baixar_e_verificar_atualizacao(download_url, hash_url):
-    """Baixa o arquivo de atualização e verifica sua integridade com o hash fornecido."""
     try:
         print(f"Iniciando o download de {download_url}...")
         response = requests.get(download_url, stream=True)
@@ -63,7 +60,6 @@ def baixar_e_verificar_atualizacao(download_url, hash_url):
         return False
 
 def baixar_update_helper(versao_atual):
-    """Baixa o update_helper.exe se ele estiver disponível na release do GitHub."""
     try:
         release_info = obter_ultima_versao()
         if not release_info:
@@ -89,12 +85,10 @@ def baixar_update_helper(versao_atual):
         return False
 
 def criar_diretorio(diretorio):
-    """Cria o diretório se ele não existir."""
     if not os.path.exists(diretorio):
         os.makedirs(diretorio)
 
 def extrair_atualizacao(caminho_zip, diretorio_destino):
-    """Extrai o conteúdo do arquivo ZIP para o diretório de destino."""
     try:
         with zipfile.ZipFile(caminho_zip, "r") as zip_ref:
             print(f"Conteúdo do ZIP: {zip_ref.namelist()}")
@@ -103,8 +97,7 @@ def extrair_atualizacao(caminho_zip, diretorio_destino):
     except zipfile.BadZipFile as e:
         print(f"Erro ao extrair o arquivo ZIP: {e}")
 
-def executar_como_administrador_oculto(executavel, *params):
-    """Executa o comando fornecido como administrador, sem mostrar a janela de terminal."""
+def executar_como_administrador(executavel, *params):
     params_str = ' '.join([f'"{param}"' for param in params])
     try:
         SW_HIDE = 0
@@ -113,17 +106,13 @@ def executar_como_administrador_oculto(executavel, *params):
         print(f"Erro ao executar como administrador: {e}")
 
 def substituir_arquivos():
-    """Substitui os arquivos baixados no diretório principal."""
     try:
         diretorio_temp = "update_temp"
         criar_diretorio(diretorio_temp)
         extrair_atualizacao("update.zip", diretorio_temp)
-        
-        # Fecha o aplicativo atual
         print("Fechando o aplicativo...")
-        # Executa update_helper.exe como administrador (oculto)
-        print("Executando update_helper.exe como administrador (oculto)...")
-        executar_como_administrador_oculto("update_helper.exe")
+        print("Executando update_helper.exe como administrador...")
+        executar_como_administrador("update_helper.exe")
         sys.exit()
     except Exception as e:
         print(f"Erro ao substituir os arquivos: {e}")

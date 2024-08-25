@@ -17,12 +17,6 @@ class Aplicacao(tk.Tk):
         logger = configurar_logs()
         logger.info("Interface grafica iniciada.")
         super().__init__()
-        if hasattr(sys, '_MEIPASS'):
-            # Se o aplicativo foi empacotado com PyInstaller ou PyOxidizer
-            icon_path = os.path.join(sys._MEIPASS, 'icon.ico')
-        else:
-            # Se o aplicativo está sendo executado no ambiente de desenvolvimento
-            icon_path = os.path.join(os.path.dirname(__file__), 'icon.ico')
         self.iconbitmap('icon.ico')
         self.title("Kalymos " + versao)
         self.geometry("600x400")
@@ -243,38 +237,38 @@ class Aplicacao(tk.Tk):
     def atualizar_preco_venda(self, event=None):
         def calcular_e_atualizar_preco_venda(entry_preco, entry_fator, entry_preco_venda):
             try:
-                # Substitui a vírgula por ponto para permitir a conversão para float
+               
                 preco = float(entry_preco.get().replace(',', '.'))
                 fator = float(entry_fator.get().replace(',', '.'))
                 preco_venda = preco * fator
 
-                # Atualiza o campo de preço de venda
+               
                 entry_preco_venda.config(state="normal")
                 entry_preco_venda.delete(0, tk.END)
                 entry_preco_venda.insert(0, f"{preco_venda:.2f}")
                 entry_preco_venda.config(state="readonly")
             except ValueError:
-                # Se os valores não forem válidos, limpa o campo de preço de venda
+                
                 entry_preco_venda.config(state="normal")
                 entry_preco_venda.delete(0, tk.END)
                 entry_preco_venda.config(state="readonly")
 
-        # Atualiza o preço de venda para os campos de "Adicionar Produto"
+        
         calcular_e_atualizar_preco_venda(self.preco_entry, self.fator_entry, self.preco_venda_entry)
 
-        # Atualiza o preço de venda para os campos de "Editar Produto"
+        
         calcular_e_atualizar_preco_venda(self.preco_editar_entry, self.fator_editar_entry, self.preco_editar_venda_entry)
 
     def adicionar_produto_base_aba(self):
         nome = self.nome_entry.get().strip()
         sku = self.sku_entry.get().strip()
-        preco = self.preco_entry.get().replace(',', '.').strip()  # Substitui vírgulas por pontos
+        preco = self.preco_entry.get().replace(',', '.').strip()
         fornecedor = self.fornecedor_entry.get().strip()
-        fator = self.fator_entry.get().replace(',', '.').strip()  # Substitui vírgulas por pontos
-       # Adiciona o produto e obtém a mensagem de status
+        fator = self.fator_entry.get().replace(',', '.').strip()
+       
         resultado = adicionar_produto_base(nome, sku, preco, fornecedor,fator)
         
-        # Exibe a mensagem
+        
         if resultado["status"] == "sucesso":
             messagebox.showinfo("Sucesso", resultado["mensagem"])
             self.atualizar_lista_produtos()
@@ -286,9 +280,9 @@ class Aplicacao(tk.Tk):
     def editar_produto(self):
         sku = self.sku_editar_entry.get()
         nome = self.nome_editar_entry.get()
-        preco = self.preco_editar_entry.get().replace(',', '.').strip()  # Substitui vírgulas por pontos
+        preco = self.preco_editar_entry.get().replace(',', '.').strip()
         fornecedor = self.fornecedor_editar_entry.get()
-        fator = self.fator_editar_entry.get().replace(',', '.').strip()  # Substitui vírgulas por pontos
+        fator = self.fator_editar_entry.get().replace(',', '.').strip()
 
         if not sku:
             messagebox.showerror("Erro", "SKU é necessário para a edição.")
@@ -310,10 +304,10 @@ class Aplicacao(tk.Tk):
             messagebox.showerror("Erro", "Fator é necessário para a edição.")
             return
 
-        # Adiciona o produto e obtém a mensagem de status
+       
         resultado = editar_produto_base(nome, sku, preco, fornecedor,fator)
         
-        # Exibe a mensagem
+        
         if resultado["status"] == "sucesso":
             messagebox.showinfo("Sucesso", resultado["mensagem"])
             self.atualizar_lista_produtos()
@@ -389,7 +383,7 @@ class Aplicacao(tk.Tk):
                 f"A data de validade é diferente da cadastrada. Deseja substituir?\nData cadastrada: {validade_existente}\nNova data: {validade}"
             )
             if resposta:
-               # Subistituindo a validade
+               
                 resultado = adicionar_entrada(sku, lote, validade, quantidade, motivo, 1)
             else:
                 resultado["status"] = "cancelado"
@@ -425,7 +419,7 @@ class Aplicacao(tk.Tk):
             
     def validar_data(self, data_str):
         try:
-            datetime.strptime(data_str, '%d/%m/%Y')  # Verifica se a data está no formato dd/mm/aaaa
+            datetime.strptime(data_str, '%d/%m/%Y')
             return True
         except ValueError:
             return False

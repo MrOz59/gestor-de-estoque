@@ -6,12 +6,11 @@ import ctypes
 import psutil
 
 def verificar_e_fechar_aplicacao(nome_processo):
-    """Verifica se o processo está em execução e o fecha."""
     for proc in psutil.process_iter(['pid', 'name']):
         if proc.info['name'] == nome_processo:
             try:
-                proc.terminate()  # Tenta fechar o processo
-                proc.wait(timeout=20)  # Aguarda até 5 segundos para o processo terminar
+                proc.terminate()
+                proc.wait(timeout=5)
                 time.sleep(20)      
                 print(f"Processo {nome_processo} fechado com sucesso.")
             except psutil.NoSuchProcess:
@@ -24,13 +23,12 @@ def verificar_e_fechar_aplicacao(nome_processo):
     print(f"Processo {nome_processo} não está em execução.")
 
 def substituir_arquivos(diretorio_temp):
-    time.sleep(20)   
-    """Substitui os arquivos do diretório temporário no diretório principal."""
+    time.sleep(5)   
     try:
         if not os.path.exists(diretorio_temp):
             raise FileNotFoundError(f"O diretório {diretorio_temp} não foi encontrado.")
 
-        # Remover o executável principal para substituição
+        
         app_executable = "kalymos.exe"
         if os.path.exists(app_executable):
             os.remove(app_executable)
@@ -38,7 +36,7 @@ def substituir_arquivos(diretorio_temp):
         else:
             print(f"Arquivo {app_executable} não encontrado para remoção.")
 
-        # Substituir arquivos do diretório temporário no diretório principal
+        
         for item in os.listdir(diretorio_temp):
             source = os.path.join(diretorio_temp, item)
             destination = os.path.join(".", item)
@@ -55,15 +53,15 @@ def substituir_arquivos(diretorio_temp):
         print(f"Erro ao substituir arquivos: {e}")
 
 def is_admin():
-    """Verifica se o script está sendo executado com privilégios de administrador."""
+    
     try:
         return ctypes.windll.shell32.IsUserAnAdmin()
     except:
         return False
 
 def executar_como_administrador(executavel, *params):
-    """Executa o comando fornecido como administrador."""
-    params_str = ' '.join([f'"{param}"' for param in params])  # Formata os parâmetros
+    
+    params_str = ' '.join([f'"{param}"' for param in params])  
     try:
         ctypes.windll.shell32.ShellExecuteW(None, "runas", executavel, params_str, None, 1)
     except Exception as e:
@@ -74,19 +72,19 @@ def main():
         print("Executando como administrador.")
         temp_dir = "update_temp"
         
-        # Verificar e fechar o aplicativo principal se estiver aberto
+        
         verificar_e_fechar_aplicacao("kalymos.exe")
         
         substituir_arquivos(temp_dir)
 
-        # Limpeza após a substituição
+        
         if os.path.exists(temp_dir):
             shutil.rmtree(temp_dir)
             print(f"Diretório {temp_dir} removido com sucesso.")
         else:
             print(f"O diretório {temp_dir} não foi encontrado para remoção.")
 
-        # Reinicie o aplicativo principal
+        
         app_executable = "kalymos.exe"
         if os.path.exists(app_executable):
             print(f"Reiniciando o aplicativo principal: {app_executable}")

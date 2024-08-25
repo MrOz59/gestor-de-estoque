@@ -19,6 +19,7 @@ def gerar_dist_com_pyinstaller(script, destino):
         print(f"Distribuição gerada com sucesso em: {destino}")
     except subprocess.CalledProcessError as e:
         print(f"Erro ao gerar a distribuição com PyInstaller: {e}")
+        return
 
 def copiar_arquivos_para_raiz(diretorio_raiz, arquivos):
     """Copia os arquivos especificados para o diretório raiz."""
