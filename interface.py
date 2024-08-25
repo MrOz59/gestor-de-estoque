@@ -156,7 +156,7 @@ class Aplicacao(tk.Tk):
         self.fornecedor_editar_entry = tk.Entry(self.aba_produtos_editar, state='disabled')
         self.fornecedor_editar_entry.grid(row=5, column=1, padx=10, pady=10)
 
-        self.salvar_produto_btn = tk.Button(self.aba_produtos_editar, text='Salvar Produto', command=self.editar_produto)
+        self.salvar_produto_btn = tk.Button(self.aba_produtos_editar, text='Salvar Produto', command=self.editar_produto, state='disabled')
         self.salvar_produto_btn.grid(row=6, column=0, columnspan=2, pady=10)
 
         # Aba Entrada
@@ -241,42 +241,36 @@ class Aplicacao(tk.Tk):
         self.atualizar_lista_produtos()
 
     def atualizar_preco_venda(self, event=None):
-        try:
-            preco = float(self.preco_entry.get())
-            fator = float(self.fator_entry.get())
-            preco_venda = preco * fator
-            # Atualiza o campo de preço de venda
-            self.preco_venda_entry.config(state="normal")
-            self.preco_venda_entry.delete(0, tk.END)
-            self.preco_venda_entry.insert(0, f"{preco_venda:.2f}")
-            self.preco_venda_entry.config(state="readonly")
-        except ValueError:
-            # Se os valores não forem válidos, limpa o campo de preço de venda
-            self.preco_venda_entry.config(state="normal")
-            self.preco_venda_entry.delete(0, tk.END)
-            self.preco_venda_entry.config(state="readonly")
-        try:
-            print("entrou")
-            preco = float(self.preco_editar_entry.get())
-            fator = float(self.fator_editar_entry.get())
-            preco_venda = preco * fator
-            # Atualiza o campo de preço de venda
-            self.preco_editar_venda_entry.config(state="normal")
-            self.preco_editar_venda_entry.delete(0, tk.END)
-            self.preco_editar_venda_entry.insert(0, f"{preco_venda:.2f}")
-            self.preco_editar_venda_entry.config(state="readonly")
-        except ValueError:
-            # Se os valores não forem válidos, limpa o campo de preço de venda
-            self.preco_editar_venda_entry.config(state="normal")
-            self.preco_editar_venda_entry.delete(0, tk.END)
-            self.preco_editar_venda_entry.config(state="readonly")
+        def calcular_e_atualizar_preco_venda(entry_preco, entry_fator, entry_preco_venda):
+            try:
+                # Substitui a vírgula por ponto para permitir a conversão para float
+                preco = float(entry_preco.get().replace(',', '.'))
+                fator = float(entry_fator.get().replace(',', '.'))
+                preco_venda = preco * fator
+
+                # Atualiza o campo de preço de venda
+                entry_preco_venda.config(state="normal")
+                entry_preco_venda.delete(0, tk.END)
+                entry_preco_venda.insert(0, f"{preco_venda:.2f}")
+                entry_preco_venda.config(state="readonly")
+            except ValueError:
+                # Se os valores não forem válidos, limpa o campo de preço de venda
+                entry_preco_venda.config(state="normal")
+                entry_preco_venda.delete(0, tk.END)
+                entry_preco_venda.config(state="readonly")
+
+        # Atualiza o preço de venda para os campos de "Adicionar Produto"
+        calcular_e_atualizar_preco_venda(self.preco_entry, self.fator_entry, self.preco_venda_entry)
+
+        # Atualiza o preço de venda para os campos de "Editar Produto"
+        calcular_e_atualizar_preco_venda(self.preco_editar_entry, self.fator_editar_entry, self.preco_editar_venda_entry)
 
     def adicionar_produto_base_aba(self):
-        nome = self.nome_entry.get()
-        sku = self.sku_entry.get()
-        preco = self.preco_entry.get()
-        fornecedor = self.fornecedor_entry.get()
-        fator = self.fator_entry.get()
+        nome = self.nome_entry.get().strip()
+        sku = self.sku_entry.get().strip()
+        preco = self.preco_entry.get().replace(',', '.').strip()  # Substitui vírgulas por pontos
+        fornecedor = self.fornecedor_entry.get().strip()
+        fator = self.fator_entry.get().replace(',', '.').strip()  # Substitui vírgulas por pontos
        # Adiciona o produto e obtém a mensagem de status
         resultado = adicionar_produto_base(nome, sku, preco, fornecedor,fator)
         
@@ -292,13 +286,30 @@ class Aplicacao(tk.Tk):
     def editar_produto(self):
         sku = self.sku_editar_entry.get()
         nome = self.nome_editar_entry.get()
-        preco = self.preco_editar_entry.get()
+        preco = self.preco_editar_entry.get().replace(',', '.').strip()  # Substitui vírgulas por pontos
         fornecedor = self.fornecedor_editar_entry.get()
-        fator = self.fator_editar_entry.get()
+        fator = self.fator_editar_entry.get().replace(',', '.').strip()  # Substitui vírgulas por pontos
 
         if not sku:
             messagebox.showerror("Erro", "SKU é necessário para a edição.")
             return
+
+        if not nome:
+            messagebox.showerror("Erro", "Nome é necessário para a edição.")
+            return
+
+        if not preco:
+            messagebox.showerror("Erro", "Preço é necessário para a edição.")
+            return
+
+        if not fornecedor:
+            messagebox.showerror("Erro", "Fornecedor é necessário para a edição.")
+            return
+
+        if not fator:
+            messagebox.showerror("Erro", "Fator é necessário para a edição.")
+            return
+
         # Adiciona o produto e obtém a mensagem de status
         resultado = editar_produto_base(nome, sku, preco, fornecedor,fator)
         
@@ -350,6 +361,7 @@ class Aplicacao(tk.Tk):
             self.fator_editar_entry.insert(0, produto['fator'])
             self.fornecedor_editar_entry.delete(0, tk.END)
             self.fornecedor_editar_entry.insert(0, produto['fornecedor'])
+            self.salvar_produto_btn.config(state='normal')
             self.atualizar_preco_venda()
         else:
             self.nome_editar_entry.config(state='disabled')
@@ -357,6 +369,7 @@ class Aplicacao(tk.Tk):
             self.fator_editar_entry.config(state='disabled')
             self.preco_editar_venda_entry.config(state='disabled')
             self.fornecedor_editar_entry.config(state='disabled')
+            self.salvar_produto_btn.config(state='disabled')
 
     def adicionar_entrada(self):
         sku = self.sku_entrada_entry.get()
@@ -364,7 +377,9 @@ class Aplicacao(tk.Tk):
         validade = self.validade_entrada_entry.get()
         quantidade = self.quantidade_entrada_entry.get()
         motivo = self.motivo_entrada_combobox.get()
-
+        if not self.validar_data(validade):
+            messagebox.showerror("Erro", "A validade deve estar no formato dd/mm/aaaa e ser uma data válida.")
+            return
         resultado = adicionar_entrada(sku, lote, validade, quantidade, motivo,0)
         
         if resultado["status"] == "erro" and "substituir?" in resultado["mensagem"]:
@@ -399,15 +414,22 @@ class Aplicacao(tk.Tk):
             messagebox.showerror("Erro", resultado["mensagem"])
 
     def formatar_data(self, entry):
-        data = entry.get()
+        data = entry.get().strip()
         if len(data) == 8:
             try:
                 data_formatada = datetime.strptime(data, '%d%m%Y').strftime('%d/%m/%Y')
                 entry.delete(0, tk.END)
                 entry.insert(0, data_formatada)
             except ValueError:
-                pass  
-
+                pass
+            
+    def validar_data(self, data_str):
+        try:
+            datetime.strptime(data_str, '%d/%m/%Y')  # Verifica se a data está no formato dd/mm/aaaa
+            return True
+        except ValueError:
+            return False
+        
     def limpar_campos_produtos(self,form):
         if form == 1:
             self.nome_entry.delete(0, tk.END)

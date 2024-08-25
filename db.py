@@ -4,6 +4,7 @@ from fpdf import FPDF
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib import colors
+import os
 from logs import configurar_logs
 
 logger = configurar_logs()
@@ -98,6 +99,7 @@ def buscar_produtos_e_lotes():
     for resultado in resultados:
         nome, sku, fornecedor, preco, fator, lote, validade, quantidade = resultado
         preco_venda = preco * fator  # Calcula o preço de venda
+        preco_venda = round(preco_venda, 2)
         produtos_com_preco_venda.append(
             (nome, sku, fornecedor, preco, preco_venda, lote, validade, quantidade)
         )
@@ -106,16 +108,23 @@ def buscar_produtos_e_lotes():
     return produtos_com_preco_venda
 
 def buscar_produtos_por_criterio(valor):
+
     logger.info(f"Buscando produtos por critério: {valor}.")
+    # Consulta SQL para buscar produtos com base no critério
     query = """
     SELECT p.nome, p.sku, p.preco, p.fornecedor, l.lote, l.validade, l.quantidade
     FROM produtos p
     LEFT JOIN lotes l ON p.sku = l.sku
     WHERE p.nome LIKE ? OR p.sku LIKE ? OR l.lote LIKE ? OR p.fornecedor LIKE ?
     """
-    valor = f"%{valor}%"
+    
+    valor_param = f"%{valor}%"
+    
+    # Executa a consulta e captura os resultados
     with conectar_bd() as (conn, cursor):
+        cursor.execute(query, (valor_param, valor_param, valor_param, valor_param))
         resultados = cursor.fetchall()
+    
     logger.info(f"Produtos encontrados por critério: {len(resultados)} registros.")
     return resultados
 
@@ -469,6 +478,7 @@ def gerar_relatorio_proximos_da_validade():
         doc.build(content)
 
     print(f"Relatório gerado: {nome_arquivo}")
+    os.startfile({nome_arquivo})
 
 def formatar(data):
     if data:
@@ -517,6 +527,7 @@ def gerar_relatorio_estoque():
     pdf_file_name = f'Kalymos_relatorio_estoque_{datetime.now().strftime("%d%m%Y_%H%M%S")}.pdf'
     pdf.output(pdf_file_name)
     print(f"Relatório gerado: {pdf_file_name}")
+    os.startfile({pdf_file_name})
 
 def gerar_relatorio_rotatividade_produtos():
     logger.info(f"Gerando relatorio de rotatividade")
@@ -639,6 +650,7 @@ def gerar_relatorio_rotatividade_produtos():
             pdf.ln()
 
     pdf.output("Kalymos_relatorio_rotatividade_produtos.pdf")
+    os.startfile('Kalymos_relatorio_rotatividade_produtos.pdf')
 
 def gerar_relatorio_movimentacoes():
     logger.info(f"Gerando relatorio de movimentações de estoque")
@@ -688,6 +700,7 @@ def gerar_relatorio_movimentacoes():
             pdf.cell(30, 10, str(row[5]), 1, 1, "C", 1)
 
     pdf.output("Kalymos_relatorio_movimentacoes.pdf")
+    os.startfile('Kalymos_relatorio_movimentacoes.pdf')
 
 def obter_cor_fundo(validade_str, hoje_str, data_limite_str):
     validade = datetime.strptime(validade_str, "%d/%m/%Y")
@@ -759,12 +772,15 @@ def gerar_relatorio_pl():
     for movimento in movimentacoes:
         motivo, tipo, sku, preco_unitario, quantidade, total_valor_perda, total_valor_venda, valor_venda = movimento
 
-        if motivo == "Venda":
+        if motivo == "Venda" or "Devolução":
             preco_utilizado = valor_venda
             valor_total = total_valor_venda
-            pdf.set_fill_color(200, 255, 200)
             total_ganhos += valor_total
-        elif motivo == "Balanco":
+            if motivo =="Venda":
+                pdf.set_fill_color(200, 255, 200)
+            else:
+                pdf.set_fill_color(255, 200, 200)  
+        elif motivo == "Balanço":
             preco_utilizado = preco_unitario
             valor_total = total_valor_venda
             pdf.set_fill_color(200, 255, 200)
@@ -802,4 +818,5 @@ def gerar_relatorio_pl():
 
     # Salvar o PDF
     pdf.output('kalymos_relatorio_pl.pdf')
+    os.startfile('kalymos_relatorio_pl.pdf')
     print("Relatório P&L gerado com sucesso!")

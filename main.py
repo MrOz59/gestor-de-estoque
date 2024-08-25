@@ -4,7 +4,7 @@ from logs import configurar_logs
 import updater
 
 def main():
-    versao_atual = "v1.4.0"
+    versao_atual = "v1.4.2"
 
     if updater.verificar_atualizacao(versao_atual):
         

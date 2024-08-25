@@ -10,7 +10,7 @@ def verificar_e_fechar_aplicacao(nome_processo):
         if proc.info['name'] == nome_processo:
             try:
                 proc.terminate()  # Tenta fechar o processo
-                proc.wait(timeout=5)  # Aguarda até 5 segundos para o processo terminar
+                proc.wait(timeout=10)  # Aguarda até 5 segundos para o processo terminar
                 print(f"Processo {nome_processo} fechado com sucesso.")
             except psutil.NoSuchProcess:
                 print(f"Processo {nome_processo} não encontrado.")
