@@ -6,3 +6,4 @@ __pycache__/
 *.spec
 *.log
 *.exe
+*.zip

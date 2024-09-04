@@ -30,8 +30,8 @@ def copiar_arquivos_para_raiz(diretorio_raiz, arquivos):
     except shutil.Error as e:
         print(f"Erro ao copiar arquivos: {e}")
 
-def compactar_arquivos_em_zip(diretorio_origem, zip_destino):
-    """Compacta os arquivos do diretório especificado em um arquivo ZIP."""
+def compactar_arquivos_em_zip(diretorio_origem, zip_destino, arquivos_extra=[]):
+    """Compacta os arquivos do diretório especificado e arquivos extras em um arquivo ZIP."""
     try:
         with zipfile.ZipFile(zip_destino, 'w', zipfile.ZIP_DEFLATED) as zipf:
             for root, dirs, files in os.walk(diretorio_origem):
@@ -39,7 +39,10 @@ def compactar_arquivos_em_zip(diretorio_origem, zip_destino):
                     file_path = os.path.join(root, file)
                     arcname = os.path.relpath(file_path, diretorio_origem)
                     zipf.write(file_path, arcname)
-        print(f"Arquivos do diretório {diretorio_origem} compactados com sucesso em {zip_destino}")
+            # Adiciona arquivos extras
+            for extra_file in arquivos_extra:
+                zipf.write(extra_file, os.path.basename(extra_file))
+        print(f"Arquivos do diretório {diretorio_origem} e extras compactados com sucesso em {zip_destino}")
     except Exception as e:
         print(f"Erro ao compactar os arquivos: {e}")
 
@@ -66,6 +69,38 @@ def gerar_metadados_hash(arquivo, arquivo_saida):
         except Exception as e:
             print(f"Erro ao salvar o hash em {arquivo_saida}: {e}")
 
+def obter_entrada_com_confirmacao(prompt):
+    """Solicita a entrada do usuário e confirma se a entrada está correta."""
+    while True:
+        entrada = input(prompt)
+        confirmacao = input(f"Você digitou '{entrada}'. Está correto? (s/n): ").strip().lower()
+        if confirmacao == 's':
+            return entrada
+        elif confirmacao == 'n':
+            print("Por favor, digite novamente.")
+        else:
+            print("Resposta inválida. Digite 's' para sim ou 'n' para não.")
+
+def gerar_config_ini(caminho_arquivo):
+    """Gera o arquivo config.ini baseado nas entradas do usuário com confirmação."""
+    try:
+        owner = obter_entrada_com_confirmacao("Digite o owner (por exemplo, MrOz59): ")
+        repo = obter_entrada_com_confirmacao("Digite o repo (por exemplo, kalymos): ")
+        version = obter_entrada_com_confirmacao("Digite a versão do aplicativo (por exemplo, v1.4.3): ")
+        main_executable = obter_entrada_com_confirmacao("Digite o nome do executável principal (por exemplo, kalymos.exe): ")
+        updater_version = obter_entrada_com_confirmacao("Digite a versão do updater (por exemplo, v1.1.0): ")
+
+        with open(caminho_arquivo, 'w') as config_file:
+            config_file.write("[config]\n")
+            config_file.write(f"owner = {owner}\n")
+            config_file.write(f"repo = {repo}\n")
+            config_file.write(f"version = {version}\n")
+            config_file.write(f"main_executable = {main_executable}\n")
+            config_file.write(f"updater_version = {updater_version}\n")
+        print(f"Arquivo {caminho_arquivo} gerado com sucesso.")
+    except Exception as e:
+        print(f"Erro ao gerar o arquivo config.ini: {e}")
+
 def main():
     # Define as variáveis de caminho e diretório
     data_atual = datetime.now().strftime("%Y-%m-%d")
@@ -77,13 +112,18 @@ def main():
     criar_diretorio(destino_dist)
     gerar_dist_com_pyinstaller('main.py', destino_dist)
     
+    # Gera o arquivo config.ini na pasta de destino
+    arquivo_config = os.path.join(diretorio_update, 'config.ini')
+    gerar_config_ini(arquivo_config)
+    
     # Compacta os arquivos gerados pelo PyInstaller na pasta dist em um arquivo ZIP chamado update.zip
     zip_destino = os.path.join(diretorio_update, "update.zip")
-    compactar_arquivos_em_zip(destino_dist, zip_destino)
+    arquivos_extra = [arquivo_config] if os.path.exists(arquivo_config) else []
+    compactar_arquivos_em_zip(destino_dist, zip_destino, arquivos_extra=arquivos_extra)
     
-    # Copia os arquivos update_helper.exe e icon.ico para o diretório raiz
+    # Copia os arquivos kalymos-updater.exe e icon.ico para o diretório raiz
     arquivos_para_copiar = [
-        os.path.join('dist', 'update_helper.exe'),
+        os.path.join('dist', 'kalymos-updater.exe'),
         'icon.ico'
     ]
     copiar_arquivos_para_raiz(diretorio_update, arquivos_para_copiar)

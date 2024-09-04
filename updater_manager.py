@@ -73,7 +73,6 @@ def check_for_updates(owner, repo, current_version):
         response.raise_for_status()
         
         latest_version = response.json()['tag_name'].lstrip('v')  # Remove 'v' if present
-        
         # Compare versions
         if compare_versions(latest_version, current_version):
             print(f"New version available: v{latest_version}")
@@ -110,21 +109,24 @@ def compare_versions(version1, version2):
     
     return version1_parts > version2_parts
 
-def run_as_admin(cmd_line=None):
+def run_as_admin(executable_name, cmd_line=None):
     """
-    Re-run the script as an administrator.
+    Re-run the specified executable as an administrator.
+    
+    :param executable_name: The name of the executable to run as administrator.
+    :param cmd_line: The command line arguments to pass to the executable.
     """
     if cmd_line is None:
-        cmd_line = ' '.join(sys.argv)
+        cmd_line = ' '.join(sys.argv[1:])  # Skip the script name
 
     try:
-        # Request administrator privileges
-        ctypes.windll.shell32.ShellExecuteW(None, "runas", sys.executable, cmd_line, None, 1)
+        # Request administrator privileges to run the specified executable
+        ctypes.windll.shell32.ShellExecuteW(None, "runas", executable_name, cmd_line, None, 1)
     except Exception as e:
         print(f"Failed to request admin privileges: {e}")
         sys.exit(1)
 
-def ensure_updater(updater_version, skip_update_check=False):
+def ensure_updater(updater_version, skip_update_check):
     """
     Ensure the updater executable is present and up-to-date.
     Downloads the updater if it is missing or out-of-date.
@@ -151,48 +153,34 @@ def ensure_updater(updater_version, skip_update_check=False):
                     update_config('config.ini', new_version)
                     print("Running the updated updater...")
                     run_as_admin(f"{updater_filename}")
-                    return True
+                    return
                 else:
                     print("Failed to download the updater.")
-                    return False
+                    return
             else:
                 print("Updater is up-to-date.")
-                return False
+                run_as_admin(f"{updater_filename}")
     else:
         print(f"{updater_filename} not found. Downloading...")
-
-        version_to_download = updater_version if skip_update_check else check_for_updates('MrOz59', 'Kalymos-Updater', updater_version)
-        
+        if skip_update_check == False:
+            version_to_download = updater_version
+            print('1')
+        else:
+            print('1')
+            version_to_download = check_for_updates('MrOz59', 'Kalymos-Updater', updater_version)
+        print(version_to_download)
         if version_to_download:
             new_version = download_updater(version_to_download, updater_filename)
             if new_version:
                 update_config('config.ini', new_version)
                 print("Running the updater...")
                 run_as_admin(f"{updater_filename}")
-                return True
+
             else:
                 print("Failed to download the updater.")
-                return False
+                run_as_admin(f"{updater_filename}")
+
         else:
             print("No version available for download.")
-            return False
+            run_as_admin(f"{updater_filename}")
 
-def main():
-    """
-    Main function to check for updates and handle the updater executable.
-    """
-    ini_file = 'config.ini'
-    updater_version, _ = load_config(ini_file)
-
-    update_needed = ensure_updater(updater_version, skip_update_check=False)
-    if update_needed:
-        print("Updater was updated and executed.")
-    else:
-        print("No update needed or an error occurred during update.")
-
-if __name__ == "__main__":
-    if not ctypes.windll.shell32.IsUserAnAdmin():
-        print("Re-running as administrator...")
-        run_as_admin()
-    else:
-        main()
