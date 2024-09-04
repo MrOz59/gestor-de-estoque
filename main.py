@@ -22,7 +22,7 @@ def main():
     parser.add_argument('--updated', action='store_true', help='Indicates that the application has been updated.')
     args = parser.parse_args()
     
-    if not args.updated:
+    """ if not args.updated:
         logger.info("Argumento não encontrado")
         # Skip update check if --updated is not passed
         skip_update_check = False
@@ -33,7 +33,7 @@ def main():
             print("Updater needed. Please restart the application after the updater has run.")
             sys.exit(0)  # Exit the application to allow the updater to run
     logger.info("Argumento encontrado")
-   
+    """
     try:
         criar_tabelas()
         logger.info("Tentando iniciar a interface gráfica.")

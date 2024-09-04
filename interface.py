@@ -9,7 +9,7 @@ from db import (
 gerar_relatorio_proximos_da_validade,gerar_relatorio_rotatividade_produtos,
 gerar_relatorio_movimentacoes,adicionar_produto_base,buscar_produto_db,
 editar_produto_base,buscar_produtos_por_criterio,adicionar_entrada,adicionar_saida,buscar_produtos_e_lotes,
-gerar_relatorio_estoque,gerar_relatorio_pl
+gerar_relatorio_estoque,gerar_relatorio_pl,excluir_produto
 )
 
 class Aplicacao(tk.Tk):
@@ -153,6 +153,9 @@ class Aplicacao(tk.Tk):
         self.salvar_produto_btn = tk.Button(self.aba_produtos_editar, text='Salvar Produto', command=self.editar_produto, state='disabled')
         self.salvar_produto_btn.grid(row=6, column=0, columnspan=2, pady=10)
 
+        self.deletar_produto_btn = tk.Button(self.aba_produtos_editar, text='Deletar Produto', command=self.excluir_produto, state='disabled')
+        self.deletar_produto_btn.grid(row=6, column=2, columnspan=2, pady=10)
+
         # Aba Entrada
         self.aba_entrada = ttk.Frame(self.notebook)
         self.notebook.add(self.aba_entrada, text='Entrada de Estoque')
@@ -259,6 +262,20 @@ class Aplicacao(tk.Tk):
         
         calcular_e_atualizar_preco_venda(self.preco_editar_entry, self.fator_editar_entry, self.preco_editar_venda_entry)
 
+    def excluir_produto(self):
+        resposta = messagebox.askyesno(
+                "Confirmação Exclusão",
+                f"A exclusão de um produto é definitiva e não pode ser desfeita. Tem certeza de que deseja excluir o produto?"
+            )
+        if resposta:
+            sku = self.sku_editar_entry.get().strip()
+            resultado = excluir_produto(sku)
+            if resultado["status"] == "sucesso":
+                messagebox.showinfo("Sucesso", resultado["mensagem"])
+                self.atualizar_lista_produtos()
+                self.limpar_campos_produtos(2)
+            else:
+                messagebox.showerror("Erro", resultado["mensagem"])
     def adicionar_produto_base_aba(self):
         nome = self.nome_entry.get().strip()
         sku = self.sku_entry.get().strip()
@@ -356,6 +373,7 @@ class Aplicacao(tk.Tk):
             self.fornecedor_editar_entry.delete(0, tk.END)
             self.fornecedor_editar_entry.insert(0, produto['fornecedor'])
             self.salvar_produto_btn.config(state='normal')
+            self.deletar_produto_btn.config(state='normal')
             self.atualizar_preco_venda()
         else:
             self.nome_editar_entry.config(state='disabled')
@@ -364,6 +382,7 @@ class Aplicacao(tk.Tk):
             self.preco_editar_venda_entry.config(state='disabled')
             self.fornecedor_editar_entry.config(state='disabled')
             self.salvar_produto_btn.config(state='disabled')
+            self.deletar_produto_btn.config(state='disabled')
 
     def adicionar_entrada(self):
         sku = self.sku_entrada_entry.get()

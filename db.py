@@ -58,6 +58,7 @@ def criar_tabelas():
             lote TEXT NOT NULL,
             validade DATE NOT NULL,
             quantidade INTEGER NOT NULL,
+            nf TEXT NULL,
             UNIQUE(sku, lote)
         )
         """
@@ -74,6 +75,7 @@ def criar_tabelas():
             quantidade INTEGER NOT NULL,
             valor FLOAT NOT NULL,
             motivo TEXT NOT NULL,
+            nf TEXT NULL,
             FOREIGN KEY (sku) REFERENCES produtos(sku),
             FOREIGN KEY (lote) REFERENCES lotes(lote)
         )
@@ -373,6 +375,41 @@ def remover_lote(sku, lote,cursor):
             (sku, lote),
         )
         logger.info(f"Lote removido: SKU {sku}, Lote {lote}.")
+
+def excluir_produto(sku):
+    logger.info(f"Tentando excluir produto com SKU: {sku}.")
+    
+    try:
+        with conectar_bd() as (conn, cursor):
+            # Verifica se o SKU existe na tabela de produtos
+            cursor.execute("SELECT COUNT(*) FROM produtos WHERE sku = ?", (sku,))
+            produto_existe = cursor.fetchone()[0] > 0
+
+            if not produto_existe:
+                logger.error(f"Produto com SKU {sku} não encontrado.")
+                return {"status": "erro", "mensagem": "Produto com SKU não encontrado."}
+
+            # Verifica se existem lotes associados a este SKU
+            cursor.execute("SELECT COUNT(*) FROM lotes WHERE sku = ?", (sku,))
+            lotes_existentes = cursor.fetchone()[0]
+
+            if lotes_existentes > 0:
+                logger.warning(f"Não é possível excluir o produto com SKU {sku} pois existem lotes cadastrados.")
+                return {"status": "erro", "mensagem": "Não é possível excluir o produto pois existem lotes cadastrados."}
+
+            # Exclui o produto da tabela de produtos
+            cursor.execute("DELETE FROM produtos WHERE sku = ?", (sku,))
+            conn.commit()
+
+            # Registra a movimentação de exclusão do produto
+            registrar_movimentacao(cursor, "Exclusão", sku, None, 0, "Exclusão de Produto", 0)
+            logger.info(f"Produto com SKU {sku} excluído com sucesso.")
+
+            return {"status": "sucesso", "mensagem": "Produto excluído com sucesso!"}
+
+    except Exception as e:
+        logger.error(f"Erro ao tentar excluir o produto {sku}: {e}")
+        return {"status": "erro", "mensagem": f"Erro ao excluir o produto: {e}"}
 
 def comparar_datas(data1, data2):
     d1 = datetime.strptime(data1, "%d/%m/%Y")
@@ -690,12 +727,6 @@ def obter_cor_fundo(validade_str, hoje_str, data_limite_str):
         return colors.yellow
     else:
         return colors.beige
-    
-from fpdf import FPDF
-from datetime import datetime, timedelta
-
-from fpdf import FPDF
-from datetime import datetime, timedelta
 
 def obter_movimentacoes_ultimos_30_dias():
     query = """
