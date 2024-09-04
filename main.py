@@ -26,7 +26,6 @@ def main():
         # Ignora a verificação de atualização se --updated for encontrado
     else:
         logger.info("Argumento encontrado")
-        skip_update_check = False
         ensure_updater()
     
     try:
