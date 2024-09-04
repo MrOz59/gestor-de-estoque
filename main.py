@@ -12,7 +12,7 @@ def main():
     version = 'v1.5.4'
     os.environ['Version'] = version
     os.environ['SkipUpdate'] = 'False'
-    os.environ['Updater'] = 'v1.1.1'
+    os.environ['Updater'] = 'v1.2.0'
     os.environ['Owner'] = 'MrOz59'
     os.environ['Repo'] = 'kalymos'
     os.environ['MainExecutable'] = 'Kalymos.exe'
