@@ -81,26 +81,6 @@ def obter_entrada_com_confirmacao(prompt):
         else:
             print("Resposta inválida. Digite 's' para sim ou 'n' para não.")
 
-def gerar_config_ini(caminho_arquivo):
-    """Gera o arquivo config.ini baseado nas entradas do usuário com confirmação."""
-    try:
-        owner = obter_entrada_com_confirmacao("Digite o owner (por exemplo, MrOz59): ")
-        repo = obter_entrada_com_confirmacao("Digite o repo (por exemplo, kalymos): ")
-        version = obter_entrada_com_confirmacao("Digite a versão do aplicativo (por exemplo, v1.4.3): ")
-        main_executable = obter_entrada_com_confirmacao("Digite o nome do executável principal (por exemplo, kalymos.exe): ")
-        updater_version = obter_entrada_com_confirmacao("Digite a versão do updater (por exemplo, v1.1.0): ")
-
-        with open(caminho_arquivo, 'w') as config_file:
-            config_file.write("[config]\n")
-            config_file.write(f"owner = {owner}\n")
-            config_file.write(f"repo = {repo}\n")
-            config_file.write(f"version = {version}\n")
-            config_file.write(f"main_executable = {main_executable}\n")
-            config_file.write(f"updater_version = {updater_version}\n")
-        print(f"Arquivo {caminho_arquivo} gerado com sucesso.")
-    except Exception as e:
-        print(f"Erro ao gerar o arquivo config.ini: {e}")
-
 def main():
     # Define as variáveis de caminho e diretório
     data_atual = datetime.now().strftime("%Y-%m-%d")
@@ -112,14 +92,9 @@ def main():
     criar_diretorio(destino_dist)
     gerar_dist_com_pyinstaller('main.py', destino_dist)
     
-    # Gera o arquivo config.ini na pasta de destino
-    arquivo_config = os.path.join(diretorio_update, 'config.ini')
-    gerar_config_ini(arquivo_config)
-    
     # Compacta os arquivos gerados pelo PyInstaller na pasta dist em um arquivo ZIP chamado update.zip
     zip_destino = os.path.join(diretorio_update, "update.zip")
-    arquivos_extra = [arquivo_config] if os.path.exists(arquivo_config) else []
-    compactar_arquivos_em_zip(destino_dist, zip_destino, arquivos_extra=arquivos_extra)
+    compactar_arquivos_em_zip(destino_dist, zip_destino)
     
     # Copia os arquivos kalymos-updater.exe e icon.ico para o diretório raiz
     arquivos_para_copiar = [
