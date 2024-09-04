@@ -1,42 +1,48 @@
 import os
 import sys
 import requests
-import subprocess
-import configparser
 import ctypes
+from packaging import version
 
-def load_config(ini_file):
-    """
-    Loads the configuration from the ini file.
-    Returns:
-        tuple: (updater_version, version)
-    """
-    if not os.path.exists(ini_file):
-        raise FileNotFoundError(f"Configuration file '{ini_file}' not found.")
+def load_config():
+    env_vars = ['Updater','SkipUpdate','Repo','Owner']
+    loaded_vars = {}
+
+    for var in env_vars:
+        value = os.environ.get(var)
+        if value:
+            if value =='False':
+                value = False
+            elif value == 'True':
+                value = True
+            loaded_vars[var] = value
+            print(f"{var} loaded with value: {value}")
+        else:
+            print(f"{var} is not set.")
+
+    return loaded_vars
     
-    config = configparser.ConfigParser()
-    config.read(ini_file)
-    updater_version = config['config']['updater_version'].lstrip('v')
-    version = config['config']['version']
-    return updater_version, version
 
-def update_config(ini_file, updater_version):
+def update_config(var_name, new_value):
     """
-    Updates the updater_version in the config file.
+    Atualiza a variável de ambiente especificada se o novo valor for maior que o valor atual.
+    
+    :param var_name: Nome da variável de ambiente.
+    :param new_value: Novo valor da variável de ambiente.
     """
-    config = configparser.ConfigParser()
-    config.read(ini_file)
-    config['config']['updater_version'] = 'v' + updater_version  # Re-add 'v' to match format
-
-    with open(ini_file, 'w') as configfile:
-        config.write(configfile)
-    print(f"Updated config file with new updater version: v{updater_version}")
+    current_value = os.environ.get(var_name)
+    
+    if current_value is None or version.parse(current_value.lstrip('v')) < version.parse(new_value.lstrip('v')):
+        os.environ[var_name] = new_value
+        print(f"{var_name} updated to {new_value}")
+    else:
+        print(f"{var_name} remains at {current_value}")
 
 def download_updater(updater_version, filename):
     """
     Downloads the updater executable.
     """
-    updater_url_template = 'https://github.com/MrOz59/Kalymos-Updater/releases/download/v{version}/{filename}'
+    updater_url_template = 'https://github.com/MrOz59/Kalymos-Updater/releases/download/{version}/{filename}'
     updater_url = updater_url_template.format(version=updater_version, filename=filename)
 
     try:
@@ -126,7 +132,7 @@ def run_as_admin(executable_name, cmd_line=None):
         print(f"Failed to request admin privileges: {e}")
         sys.exit(1)
 
-def ensure_updater(updater_version, skip_update_check):
+def ensure_updater():
     """
     Ensure the updater executable is present and up-to-date.
     Downloads the updater if it is missing or out-of-date.
@@ -134,9 +140,10 @@ def ensure_updater(updater_version, skip_update_check):
         bool: True if an update was needed and executed, False otherwise.
     """
     updater_filename = 'kalymos-updater.exe'
-
     updater_exists = os.path.exists(updater_filename)
-    
+    configs = load_config()
+    skip_update_check = configs.get('SkipUpdate',False)
+    updater_version = configs.get('Updater', 0)
     if updater_exists:
         if skip_update_check:
             print(f"{updater_filename} found. Skipping update check as per configuration.")
@@ -150,7 +157,7 @@ def ensure_updater(updater_version, skip_update_check):
                 print("Update available. Downloading the latest version...")
                 new_version = download_updater(latest_version, updater_filename)
                 if new_version:
-                    update_config('config.ini', new_version)
+                    update_config('Updater', new_version)
                     print("Running the updated updater...")
                     run_as_admin(f"{updater_filename}")
                     return
@@ -172,7 +179,7 @@ def ensure_updater(updater_version, skip_update_check):
         if version_to_download:
             new_version = download_updater(version_to_download, updater_filename)
             if new_version:
-                update_config('config.ini', new_version)
+                update_config('Updater', new_version)
                 print("Running the updater...")
                 run_as_admin(f"{updater_filename}")
 

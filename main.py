@@ -1,22 +1,21 @@
 import os
-import sys
 import argparse
 from interface import Aplicacao
 from db import criar_tabelas
 from logs import configurar_logs
-from updater_manager import load_config, ensure_updater
+from updater_manager import ensure_updater
 
 def main():
      # Configurar logs
     logger = configurar_logs()
     logger.info("Iniciando a aplicação...")
-    ini_file = 'config.ini'
-    try:
-        updater_version, version = load_config(ini_file)
-    except FileNotFoundError as e:
-        print(e)
-        return
-
+    version = 'v1.5.4'
+    os.environ['Version'] = version
+    os.environ['SkipUpdate'] = 'False'
+    os.environ['Updater'] = 'v1.1.1'
+    os.environ['Owner'] = 'MrOz59'
+    os.environ['Repo'] = 'kalymos'
+    os.environ['MainExecutable'] = 'Kalymos.exe'
     # Parse command-line arguments
     parser = argparse.ArgumentParser(description='Kalymos Application')
     parser.add_argument('--updated', action='store_true', help='Indicates that the application has been updated.')
@@ -28,7 +27,7 @@ def main():
     else:
         logger.info("Argumento encontrado")
         skip_update_check = False
-        ensure_updater(updater_version, skip_update_check)
+        ensure_updater()
     
     try:
         criar_tabelas()
