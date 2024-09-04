@@ -112,7 +112,7 @@ def buscar_produtos_por_criterio(valor):
 
     logger.info(f"Buscando produtos por critério: {valor}.")
     query = """
-    SELECT p.nome, p.sku, p.preco, p.fornecedor, l.lote, l.validade, l.quantidade
+    SELECT p.nome, p.sku, p.fornecedor, p.preco, p.fator, l.lote, l.validade, l.quantidade
     FROM produtos p
     LEFT JOIN lotes l ON p.sku = l.sku
     WHERE p.nome LIKE ? OR p.sku LIKE ? OR l.lote LIKE ? OR p.fornecedor LIKE ?
@@ -123,9 +123,16 @@ def buscar_produtos_por_criterio(valor):
     with conectar_bd() as (conn, cursor):
         cursor.execute(query, (valor_param, valor_param, valor_param, valor_param))
         resultados = cursor.fetchall()
-    
+    produtos_com_preco_venda = []
+    for resultado in resultados:
+        nome, sku, fornecedor, preco, fator, lote, validade, quantidade = resultado
+        preco_venda = preco * fator
+        preco_venda = round(preco_venda, 2)
+        produtos_com_preco_venda.append(
+            (nome, sku, fornecedor, preco, preco_venda, lote, validade, quantidade)
+        )
     logger.info(f"Produtos encontrados por critério: {len(resultados)} registros.")
-    return resultados
+    return produtos_com_preco_venda
 
 def editar_produto_base(nome, sku, preco, fornecedor,fator):
     logger.info(f"Editando produto: {sku}.")
