@@ -9,7 +9,7 @@ import logging
 logging.basicConfig(level=logging.INFO)
 
 def load_config():
-    env_vars = ['Updater', 'SkipUpdate', 'Repo', 'Owner']
+    env_vars = ['Updater', 'SkipUpdate', 'Repo', 'Owner','Version','MainExecutable']
     loaded_vars = {}
     
     for var in env_vars:
@@ -161,6 +161,7 @@ def run_as_admin(executable_name, cmd_line=None):
     except Exception as e:
         logging.error(f"Failed to request admin privileges: {e}")
         sys.exit(1)
+    sys.exit(1)
 
 def ensure_updater():
     """
