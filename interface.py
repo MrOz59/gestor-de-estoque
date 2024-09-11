@@ -121,7 +121,7 @@ class Aplicacao(tk.Tk):
         self.tree.pack(pady=10, fill=tk.BOTH, expand=True)
 
         # Bind duplo clique
-        self.tree.bind("<Double-1>", self.on_double_click)
+        self.tree.bind("<Double-1>", self.click_duplo)
 
 
         # Aba Produtos
@@ -366,7 +366,7 @@ class Aplicacao(tk.Tk):
         self.aba_config.grid_columnconfigure(0, weight=1)  # Expande a coluna do Entry
         self.aba_config.grid_columnconfigure(1, weight=0)  # Expande a coluna do Entry
 
-        self.load_configuracoes()
+        self.carregar_configuracoes()
         self.atualizar_lista_produtos()
 
     def atualizar_campos(self, aba):
@@ -382,7 +382,7 @@ class Aplicacao(tk.Tk):
             estado_lote = 'normal' if self.lote_saida_aplicavel_var.get() else 'disabled'
             self.lote_saida_entry.config(state=estado_lote)
 
-    def on_double_click(self, event):
+    def click_duplo(self, event):
         # Obtendo o item e a coluna clicada
         item = self.tree.identify('item', event.x, event.y)
         column = self.tree.identify_column(event.x)
@@ -391,9 +391,9 @@ class Aplicacao(tk.Tk):
         if item:
             column_index = int(column.split('#')[1]) - 1
             value = self.tree.item(item, 'values')[column_index]
-            self.copy_to_clipboard(value)
+            self.copiar_texto(value)
     
-    def copy_to_clipboard(self, text):
+    def copiar_texto(self, text):
         # Copiar texto para a área de transferência
         self.clipboard_clear()
         self.clipboard_append(text)
@@ -403,7 +403,7 @@ class Aplicacao(tk.Tk):
         url = "https://github.com/MrOz59/kalymos/wiki"  # Substitua pela URL da wiki do seu projeto
         webbrowser.open(url)
         
-    def get_documents_path(self):
+    def pegar_diretorio_documentos(self):
         # Definir o identificador da pasta de Documentos
         CSIDL_PERSONAL = 5  # CSIDL para a pasta de Documentos
         SHGFP_TYPE_CURRENT = 0  # Para pegar o caminho atual da pasta
@@ -449,7 +449,7 @@ class Aplicacao(tk.Tk):
             
             # Restaurar valores padrão
             self.relatorios_entry.delete(0, tk.END)
-            self.relatorios_entry.insert(0, self.get_documents_path())
+            self.relatorios_entry.insert(0, self.pegar_diretorio_documentos())
             
             # Fechar a chave
             winreg.CloseKey(reg_key)
@@ -461,7 +461,7 @@ class Aplicacao(tk.Tk):
             tk.messagebox.showerror("Erro", f"Erro ao restaurar configurações: {e}")
         self.salvar_configuracoes()
 
-    def load_configuracoes(self):
+    def carregar_configuracoes(self):
         try:
             # Abrir a chave do registro
             reg_key = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r"Software\KalymosApp", 0, winreg.KEY_READ)
@@ -477,7 +477,7 @@ class Aplicacao(tk.Tk):
             self.relatorios_entry.insert(0, diretorio_relatorios)
         except FileNotFoundError:
             # Configurações não encontradas, usar valores padrão
-            self.relatorios_entry.insert(0, self.get_documents_path())
+            self.relatorios_entry.insert(0, self.pegar_diretorio_documentos())
             self.formato_combobox.set('PDF')
         except Exception as e:
             tk.messagebox.showerror("Erro", f"Erro ao carregar configurações: {e}")
@@ -500,12 +500,6 @@ class Aplicacao(tk.Tk):
                 entry_preco_venda.config(state="normal")
                 entry_preco_venda.delete(0, tk.END)
                 entry_preco_venda.config(state="readonly")
-
-        
-        calcular_e_atualizar_preco_venda(self.preco_entry, self.fator_entry, self.preco_venda_entry)
-
-        
-        calcular_e_atualizar_preco_venda(self.preco_editar_entry, self.fator_editar_entry, self.preco_editar_venda_entry)
 
     def excluir_produto(self):
         resposta = messagebox.askyesno(
