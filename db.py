@@ -1,5 +1,6 @@
 import sqlite3
 from datetime import datetime, timedelta
+import winreg
 from fpdf import FPDF
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
@@ -134,17 +135,19 @@ def buscar_produtos_por_criterio(valor):
     logger.info(f"Produtos encontrados por critério: {len(resultados)} registros.")
     return produtos_com_preco_venda
 
-def editar_produto_base(nome, sku, preco, fornecedor,fator):
-    logger.info(f"Editando produto: {sku}.")
+def editar_produto_base(sku_antigo, sku_novo, nome, preco, fornecedor, fator):
+    logger.info(f"Editando produto: {sku_antigo}.")
     try:
         with conectar_bd() as (conn, cursor):
-            cursor.execute("SELECT SKU FROM produtos WHERE SKU = ?", (sku,))
+            # Verifica se o produto com o SKU antigo existe
+            cursor.execute("SELECT SKU FROM produtos WHERE SKU = ?", (sku_antigo,))
             if not cursor.fetchone():
-                logger.error(f"Produto com SKU {sku} não encontrado.")
+                logger.error(f"Produto com SKU {sku_antigo} não encontrado.")
                 return {"status": "erro", "mensagem": "Produto com SKU não encontrado."}
 
+            # Verifica se já existe outro produto com o mesmo nome e SKU diferente
             cursor.execute(
-                "SELECT SKU FROM produtos WHERE nome = ? AND SKU != ?", (nome, sku)
+                "SELECT SKU FROM produtos WHERE nome = ? AND SKU != ?", (nome, sku_antigo)
             )
             if cursor.fetchone():
                 logger.error(f"Produto com o mesmo nome já existe: {nome}.")
@@ -153,21 +156,55 @@ def editar_produto_base(nome, sku, preco, fornecedor,fator):
                     "mensagem": "Produto com o mesmo nome já existe.",
                 }
 
+            # Atualiza os dados do produto, incluindo o SKU, se necessário
             cursor.execute(
                 """
                 UPDATE produtos
-                SET nome = ?, preco = ?, fornecedor = ?, fator = ?
+                SET SKU = ?, nome = ?, preco = ?, fornecedor = ?, fator = ?
                 WHERE SKU = ?
             """,
-                (nome, preco, fornecedor,fator, sku),
+                (sku_novo, nome, preco, fornecedor, fator, sku_antigo),
             )
 
-            conn.commit()
-            logger.info(f"Produto {sku} atualizado com sucesso.")
+            # Verifica se existem lotes com o SKU antigo
+            cursor.execute("SELECT * FROM lotes WHERE SKU = ?", (sku_antigo,))
+            lotes = cursor.fetchall()
 
-            return {"status": "sucesso", "mensagem": "Produto atualizado com sucesso!"}
+            if lotes:
+                logger.info(f"{len(lotes)} lotes encontrados com SKU {sku_antigo}. Atualizando para {sku_novo}.")
+                # Atualiza todos os lotes com o SKU antigo para o SKU novo
+                cursor.execute(
+                    """
+                    UPDATE lotes
+                    SET SKU = ?
+                    WHERE SKU = ?
+                """,
+                    (sku_novo, sku_antigo)
+                )
+
+            # Verifica se existem movimentações com o SKU antigo
+            cursor.execute("SELECT * FROM movimentacoes WHERE SKU = ?", (sku_antigo,))
+            movimentacoes = cursor.fetchall()
+
+            if movimentacoes:
+                logger.info(f"{len(movimentacoes)} movimentações encontradas com SKU {sku_antigo}. Atualizando para {sku_novo}.")
+                # Atualiza todas as movimentações com o SKU antigo para o SKU novo
+                cursor.execute(
+                    """
+                    UPDATE movimentacoes
+                    SET SKU = ?
+                    WHERE SKU = ?
+                """,
+                    (sku_novo, sku_antigo)
+                )
+
+            # Confirma todas as alterações
+            conn.commit()
+            logger.info(f"Produto {sku_antigo}, lotes e movimentações associados atualizados com sucesso para o novo SKU {sku_novo}.")
+
+            return {"status": "sucesso", "mensagem": "Produto, lotes e movimentações atualizados com sucesso!"}
     except Exception as e:
-        logger.error(f"Erro ao atualizar produto {sku}: {e}")
+        logger.error(f"Erro ao atualizar produto {sku_antigo}: {e}")
         return {"status": "erro", "mensagem": f"Ocorreu um erro: {e}"}
 
 def buscar_produto_db(sku):
@@ -419,8 +456,19 @@ def excluir_produto(sku):
         return {"status": "erro", "mensagem": f"Erro ao excluir o produto: {e}"}
 
 def comparar_datas(data1, data2):
-    d1 = datetime.strptime(data1, "%d/%m/%Y")
-    d2 = datetime.strptime(data2, "%d/%m/%Y")
+    # Verifica se data1 ou data2 é '-'
+    if data1 == '-' or data2 == '-':
+        return 3
+    
+    try:
+        # Converte as datas para o formato datetime
+        d1 = datetime.strptime(data1, "%d/%m/%Y")
+        d2 = datetime.strptime(data2, "%d/%m/%Y")
+    except ValueError:
+        # Retorna um valor de erro se a conversão falhar
+        return 3
+
+    # Compara as datas
     if d1 > d2:
         return 1
     elif d1 < d2:
@@ -429,8 +477,16 @@ def comparar_datas(data1, data2):
         return 0
 
 def gerar_relatorio_proximos_da_validade():
-    logger.info(f"Gerando relatorio de validade")
-    nome_arquivo = "Kalymos_relatorio_proximos_da_validade.pdf"
+    logger.info("Gerando relatório de validade")
+
+    # Obter o diretório dos relatórios do registro
+    diretorio = obter_diretorio_relatorios()
+    
+    # Se não obtiver o diretório do registro, usar o diretório do programa
+    if not diretorio:
+        diretorio = os.path.dirname(os.path.abspath(__file__))
+
+    nome_arquivo = os.path.join(diretorio, "Kalymos_relatorio_proximos_da_validade.pdf")
     doc = SimpleDocTemplate(nome_arquivo, pagesize=letter)
     content = []
 
@@ -442,10 +498,10 @@ def gerar_relatorio_proximos_da_validade():
 
         cursor.execute(
             """
-        SELECT p.SKU, p.nome, p.preco, p.fornecedor, l.lote, l.validade, l.quantidade
-        FROM produtos p
-        JOIN lotes l ON p.SKU = l.SKU
-        """
+            SELECT p.SKU, p.nome, p.preco, p.fornecedor, l.lote, l.validade, l.quantidade
+            FROM produtos p
+            JOIN lotes l ON p.SKU = l.SKU
+            """
         )
 
         produtos = cursor.fetchall()
@@ -454,8 +510,10 @@ def gerar_relatorio_proximos_da_validade():
 
         for produto in produtos:
             validade_str = produto[5]
-
-            if comparar_datas(validade_str, hoje_str) < 0:
+            print(validade_str)
+            if validade_str == '-':
+                continue
+            elif comparar_datas(validade_str, hoje_str) < 0:
                 produtos_relatorio.append(produto)
             elif comparar_datas(validade_str, data_limite_str) <= 0:
                 produtos_relatorio.append(produto)
@@ -496,9 +554,9 @@ def gerar_relatorio_proximos_da_validade():
         content.append(tabela)
 
         doc.build(content)
-
-    print(f"Relatório gerado: {nome_arquivo}")
-    os.startfile({nome_arquivo})
+    
+    logger.info(f"Relatório gerado: {nome_arquivo}")
+    os.startfile(nome_arquivo)
 
 def formatar(data):
     if data:
@@ -543,10 +601,23 @@ def gerar_relatorio_estoque():
             pdf.cell(col_widths[2], 10, str(quantidade_total), 1)
             pdf.ln()
 
-    pdf_file_name = f'Kalymos_relatorio_estoque_{datetime.now().strftime("%d%m%Y_%H%M%S")}.pdf'
-    pdf.output(pdf_file_name)
+    pdf_file_name = f'Kalymos_relatorio_estoque_{datetime.now().strftime("%d%m%Y")}.pdf'
+    # Obter o diretório dos relatórios do registro
+    diretorio = obter_diretorio_relatorios()
+    
+    # Se não obtiver o diretório do registro, usar o diretório do programa
+    if not diretorio:
+        diretorio = os.path.dirname(os.path.abspath(__file__))
+
+    caminho_arquivo = os.path.join(diretorio, pdf_file_name)
+    # Gera o arquivo PDF
+    pdf.output(caminho_arquivo)
+    # Abre o arquivo PDF gerado
+    try:
+        os.startfile(caminho_arquivo)
+    except Exception as e:
+        logger.error(f"Erro ao abrir o arquivo PDF: {e}")
     print(f"Relatório gerado: {pdf_file_name}")
-    os.startfile({pdf_file_name})
 
 def gerar_relatorio_rotatividade_produtos():
     logger.info(f"Gerando relatorio de rotatividade")
@@ -580,13 +651,20 @@ def gerar_relatorio_rotatividade_produtos():
     with conectar_bd() as (conn, cursor):
         cursor.execute(
             """
-        SELECT p.nome, p.sku, p.preco, p.fornecedor, 
-               COALESCE(SUM(CASE WHEN m.tipo = 'Saída' AND m.motivo = 'Venda' AND m.data >= ? THEN m.quantidade ELSE 0 END), 0) AS total_saidas
-        FROM produtos p
-        LEFT JOIN movimentacoes m ON p.sku = m.sku AND m.tipo = 'Saída' AND m.motivo = 'Venda' AND m.data >= ?
-        GROUP BY p.sku
-        """,
-            (limite_saida, limite_saida),
+            SELECT 
+                p.nome, 
+                p.sku, 
+                p.preco, 
+                p.fornecedor, 
+                COALESCE(SUM(CASE WHEN m.tipo = 'Saída' AND m.motivo = 'Venda' AND m.data >= ? THEN m.quantidade ELSE 0 END), 0) AS total_saidas
+            FROM 
+                produtos p
+            LEFT JOIN 
+                movimentacoes m ON p.sku = m.sku
+            GROUP BY 
+                p.sku
+            """,
+            (limite_saida,)  # Passando o parâmetro como tupla
         )
 
         colors = {
@@ -605,7 +683,7 @@ def gerar_relatorio_rotatividade_produtos():
                 SELECT MAX(data) FROM movimentacoes 
                 WHERE sku = ? AND tipo = 'Entrada'
                 """,
-                    (sku,),
+                    (sku,)  # Passando o parâmetro como tupla
                 )
                 data_ultima_entrada = cursor.fetchone()[0]
 
@@ -614,7 +692,7 @@ def gerar_relatorio_rotatividade_produtos():
                 SELECT MAX(data) FROM movimentacoes 
                 WHERE sku = ? AND tipo = 'Saída'
                 """,
-                    (sku,),
+                    (sku,)  # Passando o parâmetro como tupla
                 )
                 data_ultima_saida = cursor.fetchone()[0]
 
@@ -627,7 +705,7 @@ def gerar_relatorio_rotatividade_produtos():
                 SELECT SUM(l.quantidade) FROM lotes l
                 WHERE l.sku = ? AND l.quantidade > 0
                 """,
-                    (sku,),
+                    (sku,)  # Passando o parâmetro como tupla
                 )
                 estoque = cursor.fetchone()[0] or 0
 
@@ -636,7 +714,7 @@ def gerar_relatorio_rotatividade_produtos():
                 SELECT COUNT(*) FROM movimentacoes
                 WHERE sku = ? AND tipo = 'Entrada' AND data >= ?
                 """,
-                    (sku, limite_entrada),
+                    (sku, limite_entrada)  # Aqui são dois parâmetros
                 )
                 teve_entrada_recente = cursor.fetchone()[0] > 0
 
@@ -668,8 +746,21 @@ def gerar_relatorio_rotatividade_produtos():
                 pdf.cell(col_widths[i], 10, data, 1, 0, "C", fill=True)
             pdf.ln()
 
-    pdf.output("Kalymos_relatorio_rotatividade_produtos.pdf")
-    os.startfile('Kalymos_relatorio_rotatividade_produtos.pdf')
+    # Obter o diretório dos relatórios do registro
+    diretorio = obter_diretorio_relatorios()
+    
+    # Se não obtiver o diretório do registro, usar o diretório do programa
+    if not diretorio:
+        diretorio = os.path.dirname(os.path.abspath(__file__))
+
+    caminho_arquivo = os.path.join(diretorio, "kalymos_relatorio_rotatividade.pdf")
+    # Gera o arquivo PDF
+    pdf.output(caminho_arquivo)
+    # Abre o arquivo PDF gerado
+    try:
+        os.startfile(caminho_arquivo)
+    except Exception as e:
+        logger.error(f"Erro ao abrir o arquivo PDF: {e}")
 
 def gerar_relatorio_movimentacoes():
     logger.info(f"Gerando relatorio de movimentações de estoque")
@@ -718,8 +809,21 @@ def gerar_relatorio_movimentacoes():
             pdf.cell(30, 10, row[4], 1, 0, "C", 1)
             pdf.cell(30, 10, str(row[5]), 1, 1, "C", 1)
 
-    pdf.output("Kalymos_relatorio_movimentacoes.pdf")
-    os.startfile('Kalymos_relatorio_movimentacoes.pdf')
+    # Obter o diretório dos relatórios do registro
+    diretorio = obter_diretorio_relatorios()
+    
+    # Se não obtiver o diretório do registro, usar o diretório do programa
+    if not diretorio:
+        diretorio = os.path.dirname(os.path.abspath(__file__))
+
+    caminho_arquivo = os.path.join(diretorio, "kalymos_relatorio_movimentações.pdf")
+    # Gera o arquivo PDF
+    pdf.output(caminho_arquivo)
+    # Abre o arquivo PDF gerado
+    try:
+        os.startfile(caminho_arquivo)
+    except Exception as e:
+        logger.error(f"Erro ao abrir o arquivo PDF: {e}")
 
 def obter_cor_fundo(validade_str, hoje_str, data_limite_str):
     validade = datetime.strptime(validade_str, "%d/%m/%Y")
@@ -740,105 +844,149 @@ def obter_movimentacoes_ultimos_30_dias():
     SELECT 
         m.motivo, 
         m.tipo, 
-        p.sku,
+        m.sku,
         p.preco, 
         m.quantidade,
+        m.data,
         (p.preco * m.quantidade) as total_valor_perda,
         (p.preco * p.fator * m.quantidade) as total_valor_venda,
         (p.preco * p.fator) as valor_venda
     FROM movimentacoes m
     JOIN produtos p ON m.sku = p.sku
-    WHERE m.data >= ?
-    ORDER BY m.tipo, m.motivo
+    ORDER BY m.data DESC
     """
     
+    # Calcula a data limite no formato DD/MM/YYYY
     data_limite = datetime.now() - timedelta(days=30)
-    
-    with conectar_bd() as (conn, cursor):
-        cursor.execute(query, (data_limite,))
-        resultados = cursor.fetchall()
-    
-    return resultados
+
+    try:
+        with conectar_bd() as (conn, cursor):
+            cursor.execute(query)
+            resultados = cursor.fetchall()
+            
+            # Filtra localmente as movimentações dos últimos 30 dias
+            movimentacoes_filtradas = []
+            for mov in resultados:
+                data_mov = datetime.strptime(mov[5], '%d/%m/%Y')  # Considerando que `mov[5]` é a coluna `m.data`
+                if data_mov >= data_limite:
+                    movimentacoes_filtradas.append(mov)
+            print(movimentacoes_filtradas)
+            return movimentacoes_filtradas
+    except Exception as e:
+        logger.error(f"Erro ao consultar o banco de dados: {e}")
+        return []
 
 def gerar_relatorio_pl():
+    logger.info("Gerando relatório P&L (Últimos 30 dias)")
     movimentacoes = obter_movimentacoes_ultimos_30_dias()
-    logger.info("Gerando relatório P&L")
-
-    pdf = FPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
+    
+    if not movimentacoes:
+        print("Nenhuma movimentação encontrada nos últimos 30 dias.")
+        return
+    
+    pdf = FPDF(orientation="L", unit="mm", format="A4")
     pdf.add_page()
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(0, 10, "Relatório P&L (Últimos 30 dias)", 0, 1, "C")
+    pdf.set_font("Arial", "", 10)
     
-    pdf.set_font('Arial', 'B', 16)
-    pdf.cell(0, 10, 'Relatório P&L (Últimos 30 dias)', ln=True, align='C')
+    # Define the column widths
+    col_widths = [25, 35, 25, 25, 35, 25, 40]
+
+    # Total width of all columns combined
+    total_width = sum(col_widths)
     
-    pdf.set_font('Arial', '', 12)
-    pdf.ln(10)
-
-
-    pdf.set_font('Arial', 'B', 12)
-    col_widths = [35, 25, 25, 35, 25, 40]
-    headers = ['Motivo', 'Tipo', 'SKU', 'Preço Un', 'Unidades', 'Valor Total']
-    for header, width in zip(headers, col_widths):
-        pdf.cell(width, 10, header, border=1, align='C')
-    pdf.ln()
+    # Calculate the left margin to center the table
+    page_width = pdf.w - 2 * pdf.l_margin
+    left_margin = (page_width - total_width) / 2
+    
+    pdf.set_fill_color(200, 220, 255)
+    pdf.set_x(left_margin)
+    
+    pdf.cell(col_widths[0], 10, "Data", 1, 0, "C", 1)
+    pdf.cell(col_widths[1], 10, "Motivo", 1, 0, "C", 1)
+    pdf.cell(col_widths[2], 10, "Tipo", 1, 0, "C", 1)
+    pdf.cell(col_widths[3], 10, "SKU", 1, 0, "C", 1)
+    pdf.cell(col_widths[4], 10, "Preço Un", 1, 0, "C", 1)
+    pdf.cell(col_widths[5], 10, "Unidades", 1, 0, "C", 1)
+    pdf.cell(col_widths[6], 10, "Valor Total", 1, 1, "C", 1)
 
     total_ganhos = 0
     total_perdas = 0
 
-    pdf.set_font('Arial', '', 12)
     for movimento in movimentacoes:
-        motivo, tipo, sku, preco_unitario, quantidade, total_valor_perda, total_valor_venda, valor_venda = movimento
+        motivo, tipo, sku, preco_unitario, quantidade, data, total_valor_perda, total_valor_venda, valor_venda = movimento
 
-        if motivo in ["Venda"]:
+        if motivo == "Venda":
             preco_utilizado = valor_venda
             valor_total = total_valor_venda
             total_ganhos += valor_total
-            pdf.set_fill_color(200, 255, 200)
+            fill_color = (200, 255, 200)
         elif motivo == "Balanço":
             preco_utilizado = preco_unitario
             valor_total = total_valor_perda
-            pdf.set_fill_color(200, 255, 200)
             total_ganhos += valor_total
-        elif motivo == "Devolução":
-            pdf.set_fill_color(255, 200, 200) 
-            total_perdas += valor_total
-            preco_utilizado = valor_venda
-            valor_total = total_valor_venda
+            fill_color = (200, 255, 200)
         else:
-            preco_utilizado = preco_unitario  
+            preco_utilizado = preco_unitario
             valor_total = total_valor_perda
-            pdf.set_fill_color(255, 200, 200)
             total_perdas += valor_total
+            fill_color = (255, 200, 200)
 
-        pdf.cell(col_widths[0], 10, motivo, border=1, align='C', fill=True)
-        pdf.cell(col_widths[1], 10, tipo, border=1, align='C', fill=True)
-        pdf.cell(col_widths[2], 10, sku, border=1, align='C', fill=True)
-        pdf.cell(col_widths[3], 10, f'R$ {preco_utilizado:.2f}', border=1, align='C', fill=True) 
-        pdf.cell(col_widths[4], 10, str(quantidade), border=1, align='C', fill=True)
-        pdf.cell(col_widths[5], 10, f'R$ {valor_total:.2f}', border=1, align='C', fill=True)
-        pdf.ln()
-
+        pdf.set_fill_color(*fill_color)
+        pdf.set_x(left_margin)
+        pdf.cell(col_widths[0], 10, data, 1, 0, "C", 1)
+        pdf.cell(col_widths[1], 10, motivo, 1, 0, "C", 1)
+        pdf.cell(col_widths[2], 10, tipo, 1, 0, "C", 1)
+        pdf.cell(col_widths[3], 10, sku, 1, 0, "C", 1)
+        pdf.cell(col_widths[4], 10, f'R$ {preco_utilizado:.2f}', 1, 0, "C", 1)
+        pdf.cell(col_widths[5], 10, str(quantidade), 1, 0, "C", 1)
+        pdf.cell(col_widths[6], 10, f'R$ {valor_total:.2f}', 1, 1, "C", 1)
 
     pdf.ln(10)
-    pdf.set_font('Arial', 'B', 12)
-    pdf.cell(col_widths[0] + col_widths[1] + col_widths[2], 10, 'Total Ganhos:', border=1, align='C')
-    pdf.cell(col_widths[5], 10, f'R$ {total_ganhos:.2f}', border=1, align='C')
-    pdf.ln()
+    pdf.set_font("Arial", "B", 12)
+    
+    # Center the totals section
+    pdf.set_x(left_margin)
+    pdf.cell(sum(col_widths[:2]), 10, "Total Ganhos:", 1, 0, "C")
+    pdf.cell(col_widths[6], 10, f'R$ {total_ganhos:.2f}', 1, 1, "C")
 
-    pdf.cell(col_widths[0] + col_widths[1] + col_widths[2], 10, 'Total Perdas:', border=1, align='C')
-    pdf.cell(col_widths[5], 10, f'R$ {total_perdas:.2f}', border=1, align='C')
-    pdf.ln()
+    pdf.set_x(left_margin)
+    pdf.cell(sum(col_widths[:2]), 10, "Total Perdas:", 1, 0, "C")
+    pdf.cell(col_widths[6], 10, f'R$ {total_perdas:.2f}', 1, 1, "C")
 
     diferenca = total_ganhos - total_perdas
-    if diferenca >= 0:
-        pdf.set_fill_color(200, 255, 200)  
-    else:
-        pdf.set_fill_color(255, 200, 200) 
+    pdf.set_fill_color(200, 255, 200) if diferenca >= 0 else pdf.set_fill_color(255, 200, 200)
+    
+    pdf.set_x(left_margin)
+    pdf.cell(sum(col_widths[:2]), 10, "Diferença Total:", 1, 0, "C", 1)
+    pdf.cell(col_widths[6], 10, f'R$ {diferenca:.2f}', 1, 1, "C", 1)
 
-    pdf.cell(col_widths[0] + col_widths[1] + col_widths[2], 10, 'Diferença Total:', border=1, align='C', fill=True)
-    pdf.cell(col_widths[5], 10, f'R$ {diferenca:.2f}', border=1, align='C', fill=True)
+    # Obter o diretório dos relatórios do registro
+    diretorio = obter_diretorio_relatorios()
+    
+    # Se não obtiver o diretório do registro, usar o diretório do programa
+    if not diretorio:
+        diretorio = os.path.dirname(os.path.abspath(__file__))
 
-  
-    pdf.output('kalymos_relatorio_pl.pdf')
-    os.startfile('kalymos_relatorio_pl.pdf')
+    caminho_arquivo = os.path.join(diretorio, "kalymos_relatorio_pl.pdf")
+    # Gera o arquivo PDF
+    pdf.output(caminho_arquivo)
+    # Abre o arquivo PDF gerado
+    try:
+        os.startfile(caminho_arquivo)
+    except Exception as e:
+        logger.error(f"Erro ao abrir o arquivo PDF: {e}")
+
     print("Relatório P&L gerado com sucesso!")
+
+def obter_diretorio_relatorios():
+    try:
+        chave = winreg.OpenKey(winreg.HKEY_CURRENT_USER, r'Software\KalymosApp')
+        diretorio, _ = winreg.QueryValueEx(chave, 'DiretorioRelatorios')
+        winreg.CloseKey(chave)
+        return diretorio
+    except (FileNotFoundError, OSError, TypeError):
+        return None
+    
+

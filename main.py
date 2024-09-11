@@ -9,10 +9,10 @@ def main():
      # Configurar logs
     logger = configurar_logs()
     logger.info("Iniciando a aplicação...")
-    version = 'v1.5.5'
+    version = 'v1.5.7'
     os.environ['Version'] = version
     os.environ['SkipUpdate'] = 'False'
-    os.environ['Updater'] = 'v1.1.1'
+    os.environ['Updater'] = 'v1.2.1'
     os.environ['Owner'] = 'MrOz59'
     os.environ['Repo'] = 'kalymos'
     os.environ['MainExecutable'] = 'Kalymos.exe'
